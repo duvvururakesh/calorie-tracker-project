@@ -92,6 +92,8 @@ class SleepEntry(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     date = db.Column(db.Date, nullable=False)
     duration_hours = db.Column(db.Float, nullable=False)
+    sleep_time = db.Column(db.Time, nullable=True)
+    wake_time = db.Column(db.Time, nullable=True)
     user = db.relationship('User', backref=db.backref('sleep_entries_ref', lazy=True))
 
 
@@ -123,11 +125,11 @@ class FoodLogForm(FlaskForm):
     submit_food = SubmitField('Log Food')
 
 class WaterLogForm(FlaskForm):
-    water_amount = IntegerField('Amount (ml)', validators=[DataRequired()])
+    water_amount = FloatField('Amount', validators=[DataRequired()])
     submit_water = SubmitField('Log Water')
 
 class WeightLogForm(FlaskForm):
-    weight_amount = FloatField('Weight (kg)', validators=[DataRequired()])
+    weight_amount = FloatField('Weight', validators=[DataRequired()])
     submit_weight = SubmitField('Log Weight')
 
 class StepLogForm(FlaskForm):
@@ -135,7 +137,8 @@ class StepLogForm(FlaskForm):
     submit_steps = SubmitField('Log Steps')
 
 class SleepLogForm(FlaskForm):
-    duration_hours = FloatField('Sleep (hours)', validators=[DataRequired()])
+    sleep_time = TimeField('Sleep Time', validators=[DataRequired()])
+    wake_time = TimeField('Wake Time', validators=[DataRequired()])
     submit_sleep = SubmitField('Log Sleep')
 
 class ProfileSettingsForm(FlaskForm):
@@ -275,6 +278,8 @@ def dashboard(selected_date_str):
 @login_required
 def log_entry(selected_date_str):
     selected_date = datetime.strptime(selected_date_str, "%Y-%m-%d").date()
+    
+    # Initialize all forms
     food_form = FoodLogForm()
     water_form = WaterLogForm()
     weight_form = WeightLogForm()
@@ -282,6 +287,7 @@ def log_entry(selected_date_str):
     sleep_form = SleepLogForm()
 
     if request.method == 'POST':
+        # Determine which form was submitted
         if 'submit_food' in request.form and food_form.validate_on_submit():
             entry = FoodEntry(user_id=current_user.id, date=selected_date, time=food_form.food_time.data, 
                               name=food_form.food_name.data, calories=food_form.calories.data,
@@ -291,13 +297,21 @@ def log_entry(selected_date_str):
             flash('Food entry added!', 'success')
         
         elif 'submit_water' in request.form and water_form.validate_on_submit():
-            entry = WaterEntry(user_id=current_user.id, date=selected_date, amount_ml=water_form.water_amount.data)
+            amount = water_form.water_amount.data
+            unit = request.form.get('water_unit', 'ml')
+            if unit == 'L':
+                amount *= 1000
+            entry = WaterEntry(user_id=current_user.id, date=selected_date, amount_ml=amount)
             db.session.add(entry)
             flash('Water entry added!', 'success')
 
         elif 'submit_weight' in request.form and weight_form.validate_on_submit():
-            entry = WeightEntry(user_id=current_user.id, date=selected_date, weight_kg=weight_form.weight_amount.data)
-            current_user.weight_kg = weight_form.weight_amount.data
+            weight = weight_form.weight_amount.data
+            unit = request.form.get('weight_unit', 'kg')
+            if unit == 'lbs':
+                weight *= 0.453592
+            entry = WeightEntry(user_id=current_user.id, date=selected_date, weight_kg=weight)
+            current_user.weight_kg = weight
             db.session.add(entry)
             flash('Weight entry added!', 'success')
 
@@ -307,23 +321,50 @@ def log_entry(selected_date_str):
             flash('Step entry added!', 'success')
         
         elif 'submit_sleep' in request.form and sleep_form.validate_on_submit():
-            entry = SleepEntry(user_id=current_user.id, date=selected_date, duration_hours=sleep_form.duration_hours.data)
+            sleep_time = sleep_form.sleep_time.data
+            wake_time = sleep_form.wake_time.data
+            
+            dummy_date = date.today()
+            start = datetime.combine(dummy_date, sleep_time)
+            end = datetime.combine(dummy_date, wake_time)
+
+            if end <= start:
+                end += timedelta(days=1)
+            
+            duration = end - start
+            duration_hours = duration.total_seconds() / 3600
+
+            entry = SleepEntry(user_id=current_user.id, date=selected_date, 
+                               duration_hours=duration_hours, sleep_time=sleep_time, wake_time=wake_time)
             db.session.add(entry)
             flash('Sleep entry added!', 'success')
             
         db.session.commit()
         return redirect(url_for('log_entry', selected_date_str=selected_date_str))
     
-    food_entries = FoodEntry.query.filter_by(user_id=current_user.id, date=selected_date).order_by(FoodEntry.time).all()
+    # Fetch all entries for the selected date
+    entries = {
+        'food': FoodEntry.query.filter_by(user_id=current_user.id, date=selected_date).order_by(FoodEntry.time).all(),
+        'water': WaterEntry.query.filter_by(user_id=current_user.id, date=selected_date).all(),
+        'weight': WeightEntry.query.filter_by(user_id=current_user.id, date=selected_date).all(),
+        'steps': StepEntry.query.filter_by(user_id=current_user.id, date=selected_date).all(),
+        'sleep': SleepEntry.query.filter_by(user_id=current_user.id, date=selected_date).all()
+    }
         
     return render_template('log_entry.html', title='Add Entry', selected_date=selected_date,
                            food_form=food_form, water_form=water_form, weight_form=weight_form, 
-                           step_form=step_form, sleep_form=sleep_form, food_entries=food_entries)
+                           step_form=step_form, sleep_form=sleep_form, entries=entries)
 
-@app.route('/delete/<entry_type>/<int:entry_id>', methods=['POST'])
+@app.route('/delete_entry/<entry_type>/<int:entry_id>', methods=['POST'])
 @login_required
 def delete_entry(entry_type, entry_id):
-    model_map = { 'food': FoodEntry }
+    model_map = {
+        'food': FoodEntry,
+        'water': WaterEntry,
+        'weight': WeightEntry,
+        'steps': StepEntry,
+        'sleep': SleepEntry
+    }
     model = model_map.get(entry_type)
     if not model:
         flash("Invalid entry type.", "danger")
@@ -338,7 +379,65 @@ def delete_entry(entry_type, entry_id):
     db.session.delete(entry)
     db.session.commit()
     flash(f'{entry_type.capitalize()} entry deleted.', 'success')
-    return redirect(request.referrer or url_for('dashboard', selected_date_str=selected_date_str))
+    return redirect(url_for('log_entry', selected_date_str=selected_date_str))
+
+@app.route('/edit_entry/<entry_type>/<int:entry_id>', methods=['GET', 'POST'])
+@login_required
+def edit_entry(entry_type, entry_id):
+    model_map = {
+        'food': (FoodEntry, FoodLogForm),
+        'water': (WaterEntry, WaterLogForm),
+        'weight': (WeightEntry, WeightLogForm),
+        'steps': (StepEntry, StepLogForm),
+        'sleep': (SleepEntry, SleepLogForm)
+    }
+    model, form_class = model_map.get(entry_type)
+    if not model:
+        flash("Invalid entry type.", "danger")
+        return redirect(url_for('index'))
+
+    entry = model.query.get_or_404(entry_id)
+    if entry.user_id != current_user.id:
+        flash("You are not authorized to edit this entry.", "danger")
+        return redirect(url_for('index'))
+
+    form = form_class(obj=entry)
+
+    if form.validate_on_submit():
+        if entry_type == 'food':
+            entry.name = form.food_name.data
+            entry.time = form.food_time.data
+            entry.calories = form.calories.data
+            entry.protein = form.protein.data
+            entry.carbs = form.carbs.data
+            entry.fat = form.fat.data
+            entry.sugar = form.sugar.data
+        elif entry_type == 'water':
+            entry.amount_ml = form.water_amount.data
+        elif entry_type == 'weight':
+            entry.weight_kg = form.weight_amount.data
+        elif entry_type == 'steps':
+            entry.steps = form.step_amount.data
+        elif entry_type == 'sleep':
+            entry.sleep_time = form.sleep_time.data
+            entry.wake_time = form.wake_time.data
+            
+            dummy_date = date.today()
+            start = datetime.combine(dummy_date, form.sleep_time.data)
+            end = datetime.combine(dummy_date, form.wake_time.data)
+
+            if end <= start:
+                end += timedelta(days=1)
+            
+            duration = end - start
+            entry.duration_hours = duration.total_seconds() / 3600
+
+        db.session.commit()
+        flash(f'{entry_type.capitalize()} entry updated.', 'success')
+        return redirect(url_for('log_entry', selected_date_str=entry.date.strftime('%Y-%m-%d')))
+
+    return render_template('edit_entry.html', form=form, entry_type=entry_type, entry_id=entry.id, selected_date=entry.date)
+
 
 @app.route('/settings', methods=['GET', 'POST'])
 @login_required
@@ -378,4 +477,4 @@ def settings():
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
-    app.run(debug=True)
+    app.run(host='0.0.0.0', port=5001, debug=True)
