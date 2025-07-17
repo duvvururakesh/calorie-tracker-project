@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="p-6 relative pb-24">
+    <div class="flex justify-between items-center mb-6">
+        <a href="{{ url_for('dashboard', selected_date_str=prev_day.strftime('%Y-%m-%d')) }}" class="p-2 rounded-full hover:bg-gray-700">&lt;</a>
+        <h1 class="text-xl font-bold">
+            {% if selected_date == date.today() %}Today, {{ selected_date.strftime('%b %d') }}{% else %}{{ selected_date.strftime('%a, %b %d') }}{% endif %}
+        </h1>
+        <a href="{{ url_for('dashboard', selected_date_str=next_day.strftime('%Y-%m-%d')) }}" class="p-2 rounded-full hover:bg-gray-700">&gt;</a>
+    </div>
+
+    <div class="bg-dark p-6 rounded-xl mb-6">
+        <h2 class="text-xl font-bold text-center mb-4">Calories</h2>
+        <div class="relative w-48 h-48 mx-auto">
+            <canvas id="calorieRingChart"></canvas>
+            <div id="calorie-text" class="absolute inset-0 flex flex-col items-center justify-center text-center">
+                <span class="text-3xl font-bold">{{ totals.calories|int }}</span>
+                <span class="text-sm text-gray-400">/ {{ (goals.calorie_goal - totals.calories)|int }} left</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-dark p-6 rounded-xl mb-6">
+        <h2 class="text-xl font-bold mb-4">Macros</h2>
+        <div class="grid grid-cols-2 gap-6 text-center">
+            <div>
+                <canvas id="proteinRingChart" height="120"></canvas>
+                <p class="mt-2 font-bold">{{ totals.protein|int }} / {{ goals.protein_goal|int }}g</p>
+                <p class="text-sm text-gray-400">Protein</p>
+            </div>
+            <div>
+                <canvas id="carbsRingChart" height="120"></canvas>
+                <p class="mt-2 font-bold">{{ totals.carbs|int }} / {{ goals.carbs_goal|int }}g</p>
+                <p class="text-sm text-gray-400">Carbs</p>
+            </div>
+            <div>
+                <canvas id="fatRingChart" height="120"></canvas>
+                <p class="mt-2 font-bold">{{ totals.fat|int }} / {{ goals.fat_goal|int }}g</p>
+                <p class="text-sm text-gray-400">Fat</p>
+            </div>
+            <div>
+                <canvas id="sugarRingChart" height="120"></canvas>
+                <p class="mt-2 font-bold">{{ totals.sugar|int }} / {{ goals.sugar_goal|int }}g</p>
+                <p class="text-sm text-gray-400">Sugar</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-dark p-6 rounded-xl mb-6 space-y-4">
+        <h2 class="text-xl font-bold mb-2">Activity</h2>
+        <div>
+            <h3 class="font-bold text-lg">Water</h3>
+            <div class="w-full bg-gray-700 rounded-full h-2.5 my-2"><div id="water-progress" class="bg-blue-500 h-2.5 rounded-full"></div></div>
+            <p class="text-sm text-gray-400">{{ totals.water|int }} / {{ goals.water_goal }} ml</p>
+        </div>
+        <div>
+            <h3 class="font-bold text-lg">Steps</h3>
+            <div class="w-full bg-gray-700 rounded-full h-2.5 my-2"><div id="step-progress" class="bg-amber-500 h-2.5 rounded-full"></div></div>
+            <p class="text-sm text-gray-400">{{ totals.steps|int }} / {{ goals.step_goal }}</p>
+        </div>
+        <div>
+            <h3 class="font-bold text-lg">Sleep</h3>
+            <div class="w-full bg-gray-700 rounded-full h-2.5 my-2"><div id="sleep-progress" class="bg-violet-500 h-2.5 rounded-full"></div></div>
+            <p class="text-sm text-gray-400">{{ "%.1f"|format(totals.sleep) }} / {{ "%.1f"|format(goals.sleep_goal) }} hours</p>
+        </div>
+    </div>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="bg-dark p-4 rounded-xl">
+            <h3 class="font-bold text-lg">Weight Trend</h3>
+            <canvas id="weightChart"></canvas>
+        </div>
+        <div class="bg-dark p-4 rounded-xl">
+            <h3 class="font-bold text-lg">Sleep Trend</h3>
+            <canvas id="sleepChart"></canvas>
+        </div>
+    </div>
+
+    <a href="{{ url_for('log_entry', selected_date_str=selected_date.strftime('%Y-%m-%d')) }}" class="fixed bottom-20 right-8 w-16 h-16 bg-green-500 rounded-full flex items-center justify-center text-white text-4xl shadow-lg">+</a>
+    <div class="fixed bottom-0 left-0 right-0 bg-dark p-2 flex justify-around max-w-lg mx-auto border-t border-dark">
+        <a href="{{ url_for('dashboard', selected_date_str=date.today().strftime('%Y-%m-%d')) }}" class="p-2 text-center text-green-500">Dashboard</a>
+        <a href="{{ url_for('settings') }}" class="p-2 text-center text-gray-400">Settings</a>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const totals = JSON.parse('{{ totals | tojson | safe }}');
+    const goals = JSON.parse('{{ goals | tojson | safe }}');
+    const chartData = JSON.parse('{{ chart_data | tojson | safe }}');
+
+    function createRingChart(ctx, value, goal, color) {
+        const remaining = Math.max(0, goal - value);
+        new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                datasets: [{
+                    data: [value, remaining],
+                    backgroundColor: [color, '#4A4A4A'],
+                    borderWidth: 0,
+                    circumference: 270,
+                    rotation: 225,
+                }]
+            },
+            options: {
+                responsive: true,
+                cutout: '80%',
+                plugins: { tooltip: { enabled: false }, legend: { display: false } }
+            }
+        });
+    }
+
+    createRingChart(document.getElementById('calorieRingChart').getContext('2d'), totals.calories, goals.calorie_goal, '#22c55e');
+    createRingChart(document.getElementById('proteinRingChart').getContext('2d'), totals.protein, goals.protein_goal, '#f87171');
+    createRingChart(document.getElementById('carbsRingChart').getContext('2d'), totals.carbs, goals.carbs_goal, '#38bdf8');
+    createRingChart(document.getElementById('fatRingChart').getContext('2d'), totals.fat, goals.fat_goal, '#facc15');
+    createRingChart(document.getElementById('sugarRingChart').getContext('2d'), totals.sugar, goals.sugar_goal, '#a78bfa');
+
+    document.getElementById('water-progress').style.width = `${goals.water_goal > 0 ? (totals.water / goals.water_goal * 100) : 0}%`;
+    document.getElementById('step-progress').style.width = `${goals.step_goal > 0 ? (totals.steps / goals.step_goal * 100) : 0}%`;
+    document.getElementById('sleep-progress').style.width = `${goals.sleep_goal > 0 ? (totals.sleep / goals.sleep_goal * 100) : 0}%`;
+
+    new Chart(document.getElementById('weightChart').getContext('2d'), { type: 'line', data: { labels: chartData.weight_labels, datasets: [{ label: 'Weight (kg)', data: chartData.weight_values, borderColor: '#22c55e', tension: 0.1 }] } });
+    new Chart(document.getElementById('sleepChart').getContext('2d'), { type: 'bar', data: { labels: chartData.sleep_labels, datasets: [{ label: 'Sleep (hours)', data: chartData.sleep_values, backgroundColor: '#8b5cf6' }] } });
+});
+</script>
+{% endblock %}

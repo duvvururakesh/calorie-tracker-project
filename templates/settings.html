@@ -1,0 +1,56 @@
+ <!-- --- templates/settings.html --- -->
+ {% extends "base.html" %}
+ {% block content %}
+ <div class="p-6">
+ <div class="flex justify-between items-center mb-6">
+     <h1 class="text-3xl font-bold">Settings</h1>
+     <a href="{{ url_for('dashboard', selected_date_str=date.today().strftime('%Y-%m-%d')) }}" class="text-green-400">&larr; Back to Dashboard</a>
+ </div>
+ <div x-data="{ tab: 'profile' }" class="bg-dark rounded-xl p-6">
+     <div class="border-b border-dark mb-4">
+         <nav class="flex space-x-4">
+             <button @click="tab = 'profile'" :class="{ 'border-green-500 text-green-500': tab === 'profile', 'border-transparent text-gray-400': tab !== 'profile' }" class="py-2 px-4 border-b-2 font-medium">Profile & Goals</button>
+             <button @click="tab = 'account'" :class="{ 'border-green-500 text-green-500': tab === 'account', 'border-transparent text-gray-400': tab !== 'account' }" class="py-2 px-4 border-b-2 font-medium">Account</button>
+         </nav>
+     </div>
+ 
+     <div x-show="tab === 'profile'">
+         <form method="POST">
+             {{ profile_form.hidden_tag() }}
+             <div class="space-y-4">
+                 <div>{{ profile_form.date_of_birth.label(class="block text-sm font-medium text-gray-400") }}{{ profile_form.date_of_birth(class="mt-1 w-full p-3 bg-gray-800 border border-dark rounded-lg") }}</div>
+                 <div>{{ profile_form.height_cm.label(class="block text-sm font-medium text-gray-400") }}{{ profile_form.height_cm(class="mt-1 w-full p-3 bg-gray-800 border border-dark rounded-lg") }}</div>
+                 <div>{{ profile_form.weight_kg.label(class="block text-sm font-medium text-gray-400") }}{{ profile_form.weight_kg(class="mt-1 w-full p-3 bg-gray-800 border border-dark rounded-lg") }}</div>
+                 <div>{{ profile_form.gender.label(class="block text-sm font-medium text-gray-400") }}{{ profile_form.gender(class="mt-1 w-full p-3 bg-gray-800 border border-dark rounded-lg") }}</div>
+                 <div>{{ profile_form.activity_level.label(class="block text-sm font-medium text-gray-400") }}{{ profile_form.activity_level(class="mt-1 w-full p-3 bg-gray-800 border border-dark rounded-lg") }}</div>
+                 <hr class="border-dark">
+                 <div>{{ profile_form.calorie_goal.label(class="block text-sm font-medium text-gray-400") }}{{ profile_form.calorie_goal(class="mt-1 w-full p-3 bg-gray-800 border border-dark rounded-lg") }}</div>
+                 <div>{{ profile_form.protein_goal.label(class="block text-sm font-medium text-gray-400") }}{{ profile_form.protein_goal(class="mt-1 w-full p-3 bg-gray-800 border border-dark rounded-lg") }}</div>
+                 <div>{{ profile_form.carbs_goal.label(class="block text-sm font-medium text-gray-400") }}{{ profile_form.carbs_goal(class="mt-1 w-full p-3 bg-gray-800 border border-dark rounded-lg") }}</div>
+                 <div>{{ profile_form.fat_goal.label(class="block text-sm font-medium text-gray-400") }}{{ profile_form.fat_goal(class="mt-1 w-full p-3 bg-gray-800 border border-dark rounded-lg") }}</div>
+                 <div>{{ profile_form.water_goal.label(class="block text-sm font-medium text-gray-400") }}{{ profile_form.water_goal(class="mt-1 w-full p-3 bg-gray-800 border border-dark rounded-lg") }}</div>
+                 <div>{{ profile_form.step_goal.label(class="block text-sm font-medium text-gray-400") }}{{ profile_form.step_goal(class="mt-1 w-full p-3 bg-gray-800 border border-dark rounded-lg") }}</div>
+                 <div>{{ profile_form.sleep_goal.label(class="block text-sm font-medium text-gray-400") }}{{ profile_form.sleep_goal(class="mt-1 w-full p-3 bg-gray-800 border border-dark rounded-lg") }}</div>
+                 <div class="pt-4">{{ profile_form.submit_profile(class="w-full py-3 px-4 rounded-lg text-white font-semibold bg-green-500") }}</div>
+             </div>
+         </form>
+     </div>
+     <div x-show="tab === 'account'" style="display: none;">
+         <form method="POST">
+             {{ account_form.hidden_tag() }}
+             <div class="space-y-4">
+                 <div>{{ account_form.username.label(class="block text-sm font-medium text-gray-400") }}{{ account_form.username(class="mt-1 w-full p-3 bg-gray-800 border border-dark rounded-lg") }}</div>
+                 <div>{{ account_form.profile_name.label(class="block text-sm font-medium text-gray-400") }}{{ account_form.profile_name(class="mt-1 w-full p-3 bg-gray-800 border border-dark rounded-lg") }}</div>
+                 <div>{{ account_form.email.label(class="block text-sm font-medium text-gray-400") }}{{ account_form.email(class="mt-1 w-full p-3 bg-gray-800 border border-dark rounded-lg") }}</div>
+                 <hr class="border-dark">
+                 <div>{{ account_form.current_password.label(class="block text-sm font-medium text-gray-400") }}{{ account_form.current_password(class="mt-1 w-full p-3 bg-gray-800 border border-dark rounded-lg", placeholder="Current Password") }}</div>
+                 <div>{{ account_form.new_password.label(class="block text-sm font-medium text-gray-400") }}{{ account_form.new_password(class="mt-1 w-full p-3 bg-gray-800 border border-dark rounded-lg", placeholder="New Password") }}</div>
+                 <div>{{ account_form.confirm_new_password.label(class="block text-sm font-medium text-gray-400") }}{{ account_form.confirm_new_password(class="mt-1 w-full p-3 bg-gray-800 border border-dark rounded-lg", placeholder="Confirm New Password") }}</div>
+                 <div class="pt-4">{{ account_form.submit_account(class="w-full py-3 px-4 rounded-lg text-white font-semibold bg-red-600") }}</div>
+             </div>
+         </form>
+     </div>
+ </div>
+ </div>
+ <script src="//unpkg.com/alpinejs" defer></script>
+ {% endblock %}
