@@ -1,28 +1,67 @@
-{% extends "base.html" %}
-{% block content %}
-<div class="p-6 relative pb-24">
-    <div class="flex justify-between items-center mb-6">
-        <a href="{{ url_for('dashboard', selected_date_str=prev_day.strftime('%Y-%m-%d')) }}" class="p-2 rounded-full hover:bg-gray-700">&lt;</a>
-        <h1 class="text-xl font-bold">
+<div class="p-6 relative">
+    <div class="flex justify-between items-center mb-6 bg-dark p-2 rounded-xl">
+        <a href="{{ url_for('home', selected_date=prev_day.strftime('%Y-%m-%d')) }}" class="p-2 rounded-full hover:bg-gray-700">&lt;</a>
+        <h2 class="text-xl font-bold">
             {% if selected_date == date.today() %}Today, {{ selected_date.strftime('%b %d') }}{% else %}{{ selected_date.strftime('%a, %b %d') }}{% endif %}
-        </h1>
-        <a href="{{ url_for('dashboard', selected_date_str=next_day.strftime('%Y-%m-%d')) }}" class="p-2 rounded-full hover:bg-gray-700">&gt;</a>
+        </h2>
+        <a href="{{ url_for('home', selected_date=next_day.strftime('%Y-%m-%d')) }}" class="p-2 rounded-full hover:bg-gray-700">&gt;</a>
     </div>
 
-    <div class="bg-dark p-6 rounded-xl mb-6">
-        <h2 class="text-xl font-bold text-center mb-4">Calories</h2>
-        <div class="relative w-48 h-48 mx-auto">
-            <canvas id="calorieRingChart"></canvas>
-            <div id="calorie-text" class="absolute inset-0 flex flex-col items-center justify-center text-center">
-                <span class="text-3xl font-bold">{{ totals.calories|int }}</span>
-                <span class="text-sm text-gray-400">/ {{ (goals.calorie_goal - totals.calories)|int }} left</span>
+    <div class="grid grid-cols-2 gap-4 mb-6">
+        <!-- Calorie Intake -->
+        <div class="bg-dark p-4 rounded-xl text-center">
+            <h2 class="text-lg font-bold mb-2">Calorie Intake</h2>
+            <div class="relative w-32 h-32 mx-auto">
+                <canvas id="calorieRingChart"></canvas>
+            </div>
+            <div class="mt-2">
+                <span class="text-2xl font-bold">{{ totals.calories|int }}</span>
+                <span class="text-md text-gray-400">/ {{ goals.calorie_goal|int }}</span>
+            </div>
+        </div>
+        <!-- Calories Burnt -->
+        <div class="bg-dark p-4 rounded-xl text-center">
+            <h2 class="text-lg font-bold mb-2">Calories Burnt</h2>
+            <div class="relative w-32 h-32 mx-auto">
+                <canvas id="caloriesBurntRingChart"></canvas>
+            </div>
+            <div class="mt-2">
+                <span class="text-2xl font-bold">{{ totals.calories_burnt|int }}</span>
+                <span class="text-md text-gray-400">/ {{ goals.calories_burnt_goal|int }}</span>
             </div>
         </div>
     </div>
 
+
+    <!-- Health Metrics Section -->
+    <div class="grid grid-cols-2 gap-4 mb-6">
+        <div class="bg-dark p-4 rounded-xl text-center">
+            <p class="text-sm text-gray-400">BMI</p>
+            <p class="text-2xl font-bold">{{ health_metrics.bmi }}</p>
+        </div>
+        <div class="bg-dark p-4 rounded-xl text-center">
+            <p class="text-sm text-gray-400">BMI Status</p>
+            <p class="text-2xl font-bold">{{ health_metrics.bmi_status }}</p>
+        </div>
+        <div class="bg-dark p-4 rounded-xl text-center">
+            <p class="text-sm text-gray-400">Maintenance</p>
+            <p class="text-2xl font-bold">{{ health_metrics.maintenance_calories }}</p>
+        </div>
+        <div class="bg-dark p-4 rounded-xl text-center">
+            <p class="text-sm text-gray-400">Calorie Deficit</p>
+            <p class="text-2xl font-bold 
+                {% if health_metrics.calorie_deficit != 'N/A' and health_metrics.calorie_deficit >= 0 %}
+                    text-green-500
+                {% elif health_metrics.calorie_deficit != 'N/A' %}
+                    text-red-500
+                {% endif %}
+            ">{{ health_metrics.calorie_deficit }}</p>
+        </div>
+    </div>
+
     <div class="bg-dark p-6 rounded-xl mb-6">
-        <h2 class="text-xl font-bold mb-4">Macros</h2>
-        <div class="grid grid-cols-2 gap-6 text-center">
+        <h2 class="text-xl font-bold mb-4 text-center">Macros</h2>
+        <div class="grid grid-cols-4 gap-4 text-center">
             <div>
                 <canvas id="proteinRingChart" height="120"></canvas>
                 <p class="mt-2 font-bold">{{ totals.protein|int }} / {{ goals.protein_goal|int }}g</p>
@@ -77,21 +116,26 @@
     </div>
 
     <a href="{{ url_for('log_entry', selected_date_str=selected_date.strftime('%Y-%m-%d')) }}" class="fixed bottom-20 right-8 w-16 h-16 bg-green-500 rounded-full flex items-center justify-center text-white text-4xl shadow-lg">+</a>
-    <div class="fixed bottom-0 left-0 right-0 bg-dark p-2 flex justify-around max-w-lg mx-auto border-t border-dark">
-        <a href="{{ url_for('dashboard', selected_date_str=date.today().strftime('%Y-%m-%d')) }}" class="p-2 text-center text-green-500">Dashboard</a>
-        <a href="{{ url_for('settings') }}" class="p-2 text-center text-gray-400">Settings</a>
-    </div>
 </div>
 
 <script>
+// This script needs to be re-initialized when the view is shown.
+// A more robust solution would use a custom Alpine.js event.
 document.addEventListener('DOMContentLoaded', function () {
     const totals = JSON.parse('{{ totals | tojson | safe }}');
     const goals = JSON.parse('{{ goals | tojson | safe }}');
     const chartData = JSON.parse('{{ chart_data | tojson | safe }}');
 
     function createRingChart(ctx, value, goal, color) {
+        if (window.myCharts && window.myCharts[ctx.canvas.id]) {
+            window.myCharts[ctx.canvas.id].destroy();
+        }
+        if (!window.myCharts) {
+            window.myCharts = {};
+        }
+
         const remaining = Math.max(0, goal - value);
-        new Chart(ctx, {
+        const chart = new Chart(ctx, {
             type: 'doughnut',
             data: {
                 datasets: [{
@@ -108,9 +152,11 @@ document.addEventListener('DOMContentLoaded', function () {
                 plugins: { tooltip: { enabled: false }, legend: { display: false } }
             }
         });
+        window.myCharts[ctx.canvas.id] = chart;
     }
 
     createRingChart(document.getElementById('calorieRingChart').getContext('2d'), totals.calories, goals.calorie_goal, '#22c55e');
+    createRingChart(document.getElementById('caloriesBurntRingChart').getContext('2d'), totals.calories_burnt, goals.calories_burnt_goal, '#f97316');
     createRingChart(document.getElementById('proteinRingChart').getContext('2d'), totals.protein, goals.protein_goal, '#f87171');
     createRingChart(document.getElementById('carbsRingChart').getContext('2d'), totals.carbs, goals.carbs_goal, '#38bdf8');
     createRingChart(document.getElementById('fatRingChart').getContext('2d'), totals.fat, goals.fat_goal, '#facc15');
@@ -124,4 +170,3 @@ document.addEventListener('DOMContentLoaded', function () {
     new Chart(document.getElementById('sleepChart').getContext('2d'), { type: 'bar', data: { labels: chartData.sleep_labels, datasets: [{ label: 'Sleep (hours)', data: chartData.sleep_values, backgroundColor: '#8b5cf6' }] } });
 });
 </script>
-{% endblock %}

@@ -1,26 +1,33 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="p-6" x-data="{ tab: 'food' }">
-    <div class="flex items-center mb-6">
-        <a href="{{ url_for('dashboard', selected_date_str=selected_date.strftime('%Y-%m-%d')) }}" class="mr-4">&lt; Back</a>
-        <h1 class="text-2xl font-bold">Log for {{ selected_date.strftime('%b %d') }}</h1>
+<div class="p-6" x-data="{ tab: '{{ request.args.get('tab', 'food') }}' }">
+    <div class="flex items-center mb-6 justify-center relative">
+        <a href="{{ url_for('home') }}" class="text-green-400 absolute left-0">&larr; Back</a>
+        <div class="flex items-center">
+            <a href="{{ url_for('log_entry', selected_date_str=prev_day.strftime('%Y-%m-%d')) }}" class="p-2 rounded-full hover:bg-gray-700">&lt;</a>
+            <h1 class="text-xl font-bold mx-4">
+                {% if selected_date == date.today() %}Today, {{ selected_date.strftime('%b %d') }}{% else %}{{ selected_date.strftime('%a, %b %d') }}{% endif %}
+            </h1>
+            <a href="{{ url_for('log_entry', selected_date_str=next_day.strftime('%Y-%m-%d')) }}" class="p-2 rounded-full hover:bg-gray-700">&gt;</a>
+        </div>
     </div>
 
     <!-- Tab Navigation -->
     <div class="border-b border-dark mb-4">
-        <nav class="flex space-x-1 sm:space-x-4 -mb-px">
-            <button @click="tab = 'food'" :class="{ 'border-green-500 text-green-500': tab === 'food', 'border-transparent text-gray-400': tab !== 'food' }" class="py-2 px-2 sm:px-4 border-b-2 font-medium text-sm sm:text-base">Food</button>
-            <button @click="tab = 'water'" :class="{ 'border-green-500 text-green-500': tab === 'water', 'border-transparent text-gray-400': tab !== 'water' }" class="py-2 px-2 sm:px-4 border-b-2 font-medium text-sm sm:text-base">Water</button>
-            <button @click="tab = 'weight'" :class="{ 'border-green-500 text-green-500': tab === 'weight', 'border-transparent text-gray-400': tab !== 'weight' }" class="py-2 px-2 sm:px-4 border-b-2 font-medium text-sm sm:text-base">Weight</button>
-            <button @click="tab = 'steps'" :class="{ 'border-green-500 text-green-500': tab === 'steps', 'border-transparent text-gray-400': tab !== 'steps' }" class="py-2 px-2 sm:px-4 border-b-2 font-medium text-sm sm:text-base">Steps</button>
-            <button @click="tab = 'sleep'" :class="{ 'border-green-500 text-green-500': tab === 'sleep', 'border-transparent text-gray-400': tab !== 'sleep' }" class="py-2 px-2 sm:px-4 border-b-2 font-medium text-sm sm:text-base">Sleep</button>
+        <nav class="flex space-x-1 sm:space-x-2 -mb-px overflow-x-auto">
+            <button @click="tab = 'food'" :class="{ 'border-green-500 text-green-500': tab === 'food', 'border-transparent text-gray-400': tab !== 'food' }" class="py-2 px-3 border-b-2 font-medium text-sm sm:text-base whitespace-nowrap">Food</button>
+            <button @click="tab = 'water'" :class="{ 'border-green-500 text-green-500': tab === 'water', 'border-transparent text-gray-400': tab !== 'water' }" class="py-2 px-3 border-b-2 font-medium text-sm sm:text-base whitespace-nowrap">Water</button>
+            <button @click="tab = 'weight'" :class="{ 'border-green-500 text-green-500': tab === 'weight', 'border-transparent text-gray-400': tab !== 'weight' }" class="py-2 px-3 border-b-2 font-medium text-sm sm:text-base whitespace-nowrap">Weight</button>
+            <button @click="tab = 'steps'" :class="{ 'border-green-500 text-green-500': tab === 'steps', 'border-transparent text-gray-400': tab !== 'steps' }" class="py-2 px-3 border-b-2 font-medium text-sm sm:text-base whitespace-nowrap">Steps</button>
+            <button @click="tab = 'sleep'" :class="{ 'border-green-500 text-green-500': tab === 'sleep', 'border-transparent text-gray-400': tab !== 'sleep' }" class="py-2 px-3 border-b-2 font-medium text-sm sm:text-base whitespace-nowrap">Sleep</button>
+            <button @click="tab = 'calories_burnt'" :class="{ 'border-green-500 text-green-500': tab === 'calories_burnt', 'border-transparent text-gray-400': tab !== 'calories_burnt' }" class="py-2 px-3 border-b-2 font-medium text-sm sm:text-base whitespace-nowrap">Calories Burnt</button>
         </nav>
     </div>
 
     <!-- Tab Content -->
     <div>
         <!-- Food Tab -->
-        <div x-show="tab === 'food'">
+        <div x-show="tab === 'food'" style="display: none;">
             <div class="bg-dark p-4 rounded-xl">
                 <h3 class="text-xl font-bold mb-4">Log Food</h3>
                 <form method="POST" class="space-y-4">
@@ -46,9 +53,9 @@
                     <li class="flex justify-between items-center text-sm">
                         <span>{{ entry.name }} ({{ entry.time.strftime('%H:%M') }}) - {{ entry.calories|int }} kcal</span>
                         <div class="flex items-center space-x-2">
-                            <a href="{{ url_for('edit_entry', entry_type='food', entry_id=entry.id) }}" class="text-blue-400">Edit</a>
-                            <form action="{{ url_for('delete_entry', entry_type='food', entry_id=entry.id) }}" method="POST">
-                                <button type="submit" class="text-red-500">Delete</button>
+                            <a href="{{ url_for('edit_entry', entry_type='food', entry_id=entry.id) }}" class="text-blue-400 hover:underline">Edit</a>
+                            <form action="{{ url_for('delete_entry', entry_type='food', entry_id=entry.id) }}" method="POST" class="inline">
+                                <button type="submit" class="text-red-500 hover:underline">Delete</button>
                             </form>
                         </div>
                     </li>
@@ -76,9 +83,9 @@
                     <li class="flex justify-between items-center text-sm">
                         <span>{{ entry.amount_ml }} ml</span>
                         <div class="flex items-center space-x-2">
-                            <a href="{{ url_for('edit_entry', entry_type='water', entry_id=entry.id) }}" class="text-blue-400">Edit</a>
-                            <form action="{{ url_for('delete_entry', entry_type='water', entry_id=entry.id) }}" method="POST">
-                                <button type="submit" class="text-red-500">Delete</button>
+                            <a href="{{ url_for('edit_entry', entry_type='water', entry_id=entry.id) }}" class="text-blue-400 hover:underline">Edit</a>
+                            <form action="{{ url_for('delete_entry', entry_type='water', entry_id=entry.id) }}" method="POST" class="inline">
+                                <button type="submit" class="text-red-500 hover:underline">Delete</button>
                             </form>
                         </div>
                     </li>
@@ -93,9 +100,16 @@
         <div x-show="tab === 'weight'" style="display: none;">
             <div class="bg-dark p-4 rounded-xl">
                 <h3 class="text-xl font-bold mb-4">Log Weight</h3>
-                <form method="POST" class="space-y-4">
+                <form method="POST" class="space-y-4" x-data="{ weightUnit: 'kg' }">
                     {{ weight_form.hidden_tag() }}
-                    {{ weight_form.weight_amount(class="w-full p-3 bg-gray-800 border border-dark rounded-lg", placeholder="Weight in kg") }}
+                    <div>
+                        <div class="flex items-center space-x-2 mb-2">
+                            <button type="button" @click="weightUnit = 'kg'" :class="{'bg-green-500': weightUnit === 'kg', 'bg-gray-700': weightUnit !== 'kg'}" class="px-3 py-1 rounded-lg text-sm">kg</button>
+                            <button type="button" @click="weightUnit = 'lbs'" :class="{'bg-green-500': weightUnit === 'lbs', 'bg-gray-700': weightUnit !== 'lbs'}" class="px-3 py-1 rounded-lg text-sm">lbs</button>
+                        </div>
+                        <input type="hidden" name="weight_unit" x-model="weightUnit">
+                        {{ weight_form.weight_amount(class="w-full p-3 bg-gray-800 border border-dark rounded-lg", placeholder="Weight") }}
+                    </div>
                     {{ weight_form.submit_weight(class="w-full py-3 px-4 rounded-lg text-white font-semibold bg-green-500") }}
                 </form>
             </div>
@@ -106,9 +120,9 @@
                     <li class="flex justify-between items-center text-sm">
                         <span>{{ "%.1f"|format(entry.weight_kg) }} kg</span>
                         <div class="flex items-center space-x-2">
-                            <a href="{{ url_for('edit_entry', entry_type='weight', entry_id=entry.id) }}" class="text-blue-400">Edit</a>
-                            <form action="{{ url_for('delete_entry', entry_type='weight', entry_id=entry.id) }}" method="POST">
-                                <button type="submit" class="text-red-500">Delete</button>
+                            <a href="{{ url_for('edit_entry', entry_type='weight', entry_id=entry.id) }}" class="text-blue-400 hover:underline">Edit</a>
+                            <form action="{{ url_for('delete_entry', entry_type='weight', entry_id=entry.id) }}" method="POST" class="inline">
+                                <button type="submit" class="text-red-500 hover:underline">Delete</button>
                             </form>
                         </div>
                     </li>
@@ -136,9 +150,9 @@
                     <li class="flex justify-between items-center text-sm">
                         <span>{{ entry.steps }} steps</span>
                         <div class="flex items-center space-x-2">
-                            <a href="{{ url_for('edit_entry', entry_type='steps', entry_id=entry.id) }}" class="text-blue-400">Edit</a>
-                            <form action="{{ url_for('delete_entry', entry_type='steps', entry_id=entry.id) }}" method="POST">
-                                <button type="submit" class="text-red-500">Delete</button>
+                            <a href="{{ url_for('edit_entry', entry_type='steps', entry_id=entry.id) }}" class="text-blue-400 hover:underline">Edit</a>
+                            <form action="{{ url_for('delete_entry', entry_type='steps', entry_id=entry.id) }}" method="POST" class="inline">
+                                <button type="submit" class="text-red-500 hover:underline">Delete</button>
                             </form>
                         </div>
                     </li>
@@ -175,9 +189,9 @@
                     <li class="flex justify-between items-center text-sm">
                         <span>{{ "%.1f"|format(entry.duration_hours) }} hours</span>
                         <div class="flex items-center space-x-2">
-                            <a href="{{ url_for('edit_entry', entry_type='sleep', entry_id=entry.id) }}" class="text-blue-400">Edit</a>
-                            <form action="{{ url_for('delete_entry', entry_type='sleep', entry_id=entry.id) }}" method="POST">
-                                <button type="submit" class="text-red-500">Delete</button>
+                            <a href="{{ url_for('edit_entry', entry_type='sleep', entry_id=entry.id) }}" class="text-blue-400 hover:underline">Edit</a>
+                            <form action="{{ url_for('delete_entry', entry_type='sleep', entry_id=entry.id) }}" method="POST" class="inline">
+                                <button type="submit" class="text-red-500 hover:underline">Delete</button>
                             </form>
                         </div>
                     </li>
@@ -187,7 +201,37 @@
                 </ul>
             </div>
         </div>
+        
+        <!-- Calories Burnt Tab -->
+        <div x-show="tab === 'calories_burnt'" style="display: none;">
+            <div class="bg-dark p-4 rounded-xl">
+                <h3 class="text-xl font-bold mb-4">Log Calories Burnt</h3>
+                <form method="POST" class="space-y-4">
+                    {{ calories_burnt_form.hidden_tag() }}
+                    {{ calories_burnt_form.calories_burnt(class="w-full p-3 bg-gray-800 border border-dark rounded-lg", placeholder="Calories Burnt") }}
+                    {{ calories_burnt_form.submit_calories_burnt(class="w-full py-3 px-4 rounded-lg text-white font-semibold bg-green-500") }}
+                </form>
+            </div>
+             <div class="bg-dark p-4 rounded-xl mt-4">
+                <h3 class="text-lg font-bold mb-2">Logged Calories Burnt</h3>
+                <ul class="space-y-2">
+                    {% for entry in entries.calories_burnt %}
+                    <li class="flex justify-between items-center text-sm">
+                        <span>{{ entry.calories_burnt }} kcal</span>
+                        <div class="flex items-center space-x-2">
+                            <a href="{{ url_for('edit_entry', entry_type='calories_burnt', entry_id=entry.id) }}" class="text-blue-400 hover:underline">Edit</a>
+                            <form action="{{ url_for('delete_entry', entry_type='calories_burnt', entry_id=entry.id) }}" method="POST" class="inline">
+                                <button type="submit" class="text-red-500 hover:underline">Delete</button>
+                            </form>
+                        </div>
+                    </li>
+                    {% else %}
+                    <li class="text-gray-500">No calories burnt logged yet.</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+
     </div>
 </div>
-<script src="//unpkg.com/alpinejs" defer></script>
 {% endblock %}

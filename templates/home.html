@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="w-full min-h-screen" x-data="{ view: '{{ request.args.get('view', 'dashboard') }}' }">
+    <main class="pb-24">
+        <!-- Dashboard View -->
+        <div x-show="view === 'dashboard'">
+            {% include 'dashboard.html' %}
+        </div>
+
+        <!-- Settings View -->
+        <div x-show="view === 'settings'" style="display: none;">
+            {% include 'settings.html' %}
+        </div>
+    </main>
+
+    <!-- Bottom Navigation -->
+    <div class="fixed bottom-0 left-0 right-0 bg-dark p-2 flex justify-around max-w-lg mx-auto border-t border-dark">
+        <button @click="view = 'dashboard'" class="p-2 text-center" :class="{ 'text-green-500': view === 'dashboard', 'text-gray-400': view !== 'dashboard' }">Dashboard</button>
+        <button @click="view = 'settings'" class="p-2 text-center" :class="{ 'text-green-500': view === 'settings', 'text-gray-400': view !== 'settings' }">Settings</button>
+    </div>
+</div>
+{% endblock %}

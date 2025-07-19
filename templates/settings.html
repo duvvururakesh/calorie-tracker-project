@@ -1,56 +1,116 @@
- <!-- --- templates/settings.html --- -->
- {% extends "base.html" %}
- {% block content %}
- <div class="p-6">
- <div class="flex justify-between items-center mb-6">
-     <h1 class="text-3xl font-bold">Settings</h1>
-     <a href="{{ url_for('dashboard', selected_date_str=date.today().strftime('%Y-%m-%d')) }}" class="text-green-400">&larr; Back to Dashboard</a>
- </div>
- <div x-data="{ tab: 'profile' }" class="bg-dark rounded-xl p-6">
-     <div class="border-b border-dark mb-4">
-         <nav class="flex space-x-4">
-             <button @click="tab = 'profile'" :class="{ 'border-green-500 text-green-500': tab === 'profile', 'border-transparent text-gray-400': tab !== 'profile' }" class="py-2 px-4 border-b-2 font-medium">Profile & Goals</button>
-             <button @click="tab = 'account'" :class="{ 'border-green-500 text-green-500': tab === 'account', 'border-transparent text-gray-400': tab !== 'account' }" class="py-2 px-4 border-b-2 font-medium">Account</button>
-         </nav>
-     </div>
- 
-     <div x-show="tab === 'profile'">
-         <form method="POST">
-             {{ profile_form.hidden_tag() }}
-             <div class="space-y-4">
-                 <div>{{ profile_form.date_of_birth.label(class="block text-sm font-medium text-gray-400") }}{{ profile_form.date_of_birth(class="mt-1 w-full p-3 bg-gray-800 border border-dark rounded-lg") }}</div>
-                 <div>{{ profile_form.height_cm.label(class="block text-sm font-medium text-gray-400") }}{{ profile_form.height_cm(class="mt-1 w-full p-3 bg-gray-800 border border-dark rounded-lg") }}</div>
-                 <div>{{ profile_form.weight_kg.label(class="block text-sm font-medium text-gray-400") }}{{ profile_form.weight_kg(class="mt-1 w-full p-3 bg-gray-800 border border-dark rounded-lg") }}</div>
-                 <div>{{ profile_form.gender.label(class="block text-sm font-medium text-gray-400") }}{{ profile_form.gender(class="mt-1 w-full p-3 bg-gray-800 border border-dark rounded-lg") }}</div>
-                 <div>{{ profile_form.activity_level.label(class="block text-sm font-medium text-gray-400") }}{{ profile_form.activity_level(class="mt-1 w-full p-3 bg-gray-800 border border-dark rounded-lg") }}</div>
-                 <hr class="border-dark">
-                 <div>{{ profile_form.calorie_goal.label(class="block text-sm font-medium text-gray-400") }}{{ profile_form.calorie_goal(class="mt-1 w-full p-3 bg-gray-800 border border-dark rounded-lg") }}</div>
-                 <div>{{ profile_form.protein_goal.label(class="block text-sm font-medium text-gray-400") }}{{ profile_form.protein_goal(class="mt-1 w-full p-3 bg-gray-800 border border-dark rounded-lg") }}</div>
-                 <div>{{ profile_form.carbs_goal.label(class="block text-sm font-medium text-gray-400") }}{{ profile_form.carbs_goal(class="mt-1 w-full p-3 bg-gray-800 border border-dark rounded-lg") }}</div>
-                 <div>{{ profile_form.fat_goal.label(class="block text-sm font-medium text-gray-400") }}{{ profile_form.fat_goal(class="mt-1 w-full p-3 bg-gray-800 border border-dark rounded-lg") }}</div>
-                 <div>{{ profile_form.water_goal.label(class="block text-sm font-medium text-gray-400") }}{{ profile_form.water_goal(class="mt-1 w-full p-3 bg-gray-800 border border-dark rounded-lg") }}</div>
-                 <div>{{ profile_form.step_goal.label(class="block text-sm font-medium text-gray-400") }}{{ profile_form.step_goal(class="mt-1 w-full p-3 bg-gray-800 border border-dark rounded-lg") }}</div>
-                 <div>{{ profile_form.sleep_goal.label(class="block text-sm font-medium text-gray-400") }}{{ profile_form.sleep_goal(class="mt-1 w-full p-3 bg-gray-800 border border-dark rounded-lg") }}</div>
-                 <div class="pt-4">{{ profile_form.submit_profile(class="w-full py-3 px-4 rounded-lg text-white font-semibold bg-green-500") }}</div>
-             </div>
-         </form>
-     </div>
-     <div x-show="tab === 'account'" style="display: none;">
-         <form method="POST">
-             {{ account_form.hidden_tag() }}
-             <div class="space-y-4">
-                 <div>{{ account_form.username.label(class="block text-sm font-medium text-gray-400") }}{{ account_form.username(class="mt-1 w-full p-3 bg-gray-800 border border-dark rounded-lg") }}</div>
-                 <div>{{ account_form.profile_name.label(class="block text-sm font-medium text-gray-400") }}{{ account_form.profile_name(class="mt-1 w-full p-3 bg-gray-800 border border-dark rounded-lg") }}</div>
-                 <div>{{ account_form.email.label(class="block text-sm font-medium text-gray-400") }}{{ account_form.email(class="mt-1 w-full p-3 bg-gray-800 border border-dark rounded-lg") }}</div>
-                 <hr class="border-dark">
-                 <div>{{ account_form.current_password.label(class="block text-sm font-medium text-gray-400") }}{{ account_form.current_password(class="mt-1 w-full p-3 bg-gray-800 border border-dark rounded-lg", placeholder="Current Password") }}</div>
-                 <div>{{ account_form.new_password.label(class="block text-sm font-medium text-gray-400") }}{{ account_form.new_password(class="mt-1 w-full p-3 bg-gray-800 border border-dark rounded-lg", placeholder="New Password") }}</div>
-                 <div>{{ account_form.confirm_new_password.label(class="block text-sm font-medium text-gray-400") }}{{ account_form.confirm_new_password(class="mt-1 w-full p-3 bg-gray-800 border border-dark rounded-lg", placeholder="Confirm New Password") }}</div>
-                 <div class="pt-4">{{ account_form.submit_account(class="w-full py-3 px-4 rounded-lg text-white font-semibold bg-red-600") }}</div>
-             </div>
-         </form>
-     </div>
- </div>
- </div>
- <script src="//unpkg.com/alpinejs" defer></script>
- {% endblock %}
+<div class="p-6" x-data="unitConverter({{ current_user.height_cm or 0 }}, {{ current_user.weight_kg or 0 }})">
+    <div x-data="{ tab: '{{ request.args.get('tab', 'profile') }}' }" class="bg-dark rounded-xl p-6">
+        <div class="border-b border-dark mb-4">
+            <nav class="flex justify-between">
+                <button @click="tab = 'profile'" :class="{ 'border-green-500 text-green-500': tab === 'profile', 'border-transparent text-gray-400': tab !== 'profile' }" class="flex-1 py-2 px-4 border-b-2 font-medium text-center">Profile</button>
+                <button @click="tab = 'goals'" :class="{ 'border-green-500 text-green-500': tab === 'goals', 'border-transparent text-gray-400': tab !== 'goals' }" class="flex-1 py-2 px-4 border-b-2 font-medium text-center">Goals</button>
+                <button @click="tab = 'account'" :class="{ 'border-green-500 text-green-500': tab === 'account', 'border-transparent text-gray-400': tab !== 'account' }" class="flex-1 py-2 px-4 border-b-2 font-medium text-center">Account</button>
+            </nav>
+        </div>
+
+        <div x-show="tab === 'profile'" style="display: none;">
+            <form action="{{ url_for('settings') }}" method="POST">
+                {{ profile_form.hidden_tag() }}
+                <div class="space-y-4">
+                    <!-- Height Input -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-400">Height</label>
+                        <div class="flex items-center space-x-2 mt-1">
+                            <button type="button" @click="heightUnit = 'cm'" :class="{'bg-green-500': heightUnit === 'cm', 'bg-gray-700': heightUnit !== 'cm'}" class="px-3 py-1 rounded-lg text-sm">cm</button>
+                            <button type="button" @click="heightUnit = 'ft'" :class="{'bg-green-500': heightUnit === 'ft', 'bg-gray-700': heightUnit !== 'ft'}" class="px-3 py-1 rounded-lg text-sm">ft/in</button>
+                        </div>
+                        <input type="hidden" name="height_unit" x-model="heightUnit">
+                        <div x-show="heightUnit === 'cm'" class="mt-2">
+                            <input id="{{ profile_form.height_cm.id }}" name="{{ profile_form.height_cm.name }}" type="text" class="w-full p-3 bg-gray-800 border border-dark rounded-lg" x-model="heightCm">
+                        </div>
+                        <div x-show="heightUnit === 'ft'" class="mt-2 flex space-x-2">
+                            <input id="{{ profile_form.height_ft.id }}" name="{{ profile_form.height_ft.name }}" type="text" class="w-1/2 p-3 bg-gray-800 border border-dark rounded-lg" placeholder="ft" x-model="heightFt">
+                            <input id="{{ profile_form.height_in.id }}" name="{{ profile_form.height_in.name }}" type="text" class="w-1/2 p-3 bg-gray-800 border border-dark rounded-lg" placeholder="in" x-model="heightIn">
+                        </div>
+                    </div>
+                    <!-- Weight Input -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-400">Weight</label>
+                        <div class="flex items-center space-x-2 mt-1">
+                            <button type="button" @click="weightUnit = 'kg'" :class="{'bg-green-500': weightUnit === 'kg', 'bg-gray-700': weightUnit !== 'kg'}" class="px-3 py-1 rounded-lg text-sm">kg</button>
+                            <button type="button" @click="weightUnit = 'lbs'" :class="{'bg-green-500': weightUnit === 'lbs', 'bg-gray-700': weightUnit !== 'lbs'}" class="px-3 py-1 rounded-lg text-sm">lbs</button>
+                        </div>
+                        <input type="hidden" name="weight_unit" x-model="weightUnit">
+                        <div class="mt-2">
+                           <input id="{{ profile_form.weight_kg.id }}" name="{{ profile_form.weight_kg.name }}" type="text" class="w-full p-3 bg-gray-800 border border-dark rounded-lg" x-model="weightKg">
+                        </div>
+                    </div>
+
+                    <div>{{ profile_form.date_of_birth.label(class="block text-sm font-medium text-gray-400") }}{{ profile_form.date_of_birth(class="mt-1 w-full p-3 bg-gray-800 border border-dark rounded-lg") }}</div>
+                    <div>{{ profile_form.gender.label(class="block text-sm font-medium text-gray-400") }}{{ profile_form.gender(class="mt-1 w-full p-3 bg-gray-800 border border-dark rounded-lg") }}</div>
+                    <div>{{ profile_form.activity_level.label(class="block text-sm font-medium text-gray-400") }}{{ profile_form.activity_level(class="mt-1 w-full p-3 bg-gray-800 border border-dark rounded-lg") }}</div>
+                    <div class="pt-4">{{ profile_form.submit_profile(class="w-full py-3 px-4 rounded-lg text-white font-semibold bg-green-500") }}</div>
+                </div>
+            </form>
+        </div>
+        
+        <div x-show="tab === 'goals'" style="display: none;">
+            <form action="{{ url_for('settings') }}" method="POST">
+                {{ goals_form.hidden_tag() }}
+                <div class="space-y-4">
+                    <div>{{ goals_form.calorie_goal.label(class="block text-sm font-medium text-gray-400") }}{{ goals_form.calorie_goal(class="mt-1 w-full p-3 bg-gray-800 border border-dark rounded-lg") }}</div>
+                    <div>{{ goals_form.calories_burnt_goal.label(class="block text-sm font-medium text-gray-400") }}{{ goals_form.calories_burnt_goal(class="mt-1 w-full p-3 bg-gray-800 border border-dark rounded-lg") }}</div>
+                    <div>{{ goals_form.protein_goal.label(class="block text-sm font-medium text-gray-400") }}{{ goals_form.protein_goal(class="mt-1 w-full p-3 bg-gray-800 border border-dark rounded-lg") }}</div>
+                    <div>{{ goals_form.carbs_goal.label(class="block text-sm font-medium text-gray-400") }}{{ goals_form.carbs_goal(class="mt-1 w-full p-3 bg-gray-800 border border-dark rounded-lg") }}</div>
+                    <div>{{ goals_form.fat_goal.label(class="block text-sm font-medium text-gray-400") }}{{ goals_form.fat_goal(class="mt-1 w-full p-3 bg-gray-800 border border-dark rounded-lg") }}</div>
+                    <div>{{ goals_form.sugar_goal.label(class="block text-sm font-medium text-gray-400") }}{{ goals_form.sugar_goal(class="mt-1 w-full p-3 bg-gray-800 border border-dark rounded-lg") }}</div>
+                    <div>{{ goals_form.water_goal.label(class="block text-sm font-medium text-gray-400") }}{{ goals_form.water_goal(class="mt-1 w-full p-3 bg-gray-800 border border-dark rounded-lg") }}</div>
+                    <div>{{ goals_form.step_goal.label(class="block text-sm font-medium text-gray-400") }}{{ goals_form.step_goal(class="mt-1 w-full p-3 bg-gray-800 border border-dark rounded-lg") }}</div>
+                    <div>{{ goals_form.sleep_goal.label(class="block text-sm font-medium text-gray-400") }}{{ goals_form.sleep_goal(class="mt-1 w-full p-3 bg-gray-800 border border-dark rounded-lg") }}</div>
+                    <div class="pt-4">{{ goals_form.submit_goals(class="w-full py-3 px-4 rounded-lg text-white font-semibold bg-green-500") }}</div>
+                </div>
+            </form>
+        </div>
+
+        <div x-show="tab === 'account'" style="display: none;">
+            <form action="{{ url_for('settings') }}" method="POST">
+                {{ account_form.hidden_tag() }}
+                <div class="space-y-4">
+                    <div>{{ account_form.username.label(class="block text-sm font-medium text-gray-400") }}{{ account_form.username(class="mt-1 w-full p-3 bg-gray-800 border border-dark rounded-lg") }}</div>
+                    <div>{{ account_form.profile_name.label(class="block text-sm font-medium text-gray-400") }}{{ account_form.profile_name(class="mt-1 w-full p-3 bg-gray-800 border border-dark rounded-lg") }}</div>
+                    <div>{{ account_form.email.label(class="block text-sm font-medium text-gray-400") }}{{ account_form.email(class="mt-1 w-full p-3 bg-gray-800 border border-dark rounded-lg") }}</div>
+                    <hr class="border-dark">
+                    <div>{{ account_form.current_password.label(class="block text-sm font-medium text-gray-400") }}{{ account_form.current_password(class="mt-1 w-full p-3 bg-gray-800 border border-dark rounded-lg", placeholder="Current Password") }}</div>
+                    <div>{{ account_form.new_password.label(class="block text-sm font-medium text-gray-400") }}{{ account_form.new_password(class="mt-1 w-full p-3 bg-gray-800 border border-dark rounded-lg", placeholder="New Password") }}</div>
+                    <div>{{ account_form.confirm_new_password.label(class="block text-sm font-medium text-gray-400") }}{{ account_form.confirm_new_password(class="mt-1 w-full p-3 bg-gray-800 border border-dark rounded-lg", placeholder="Confirm New Password") }}</div>
+                    <div class="pt-4">{{ account_form.submit_account(class="w-full py-3 px-4 rounded-lg text-white font-semibold bg-red-600") }}</div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<script>
+function unitConverter(initialHeightCm, initialWeightKg) {
+    return {
+        heightUnit: 'cm',
+        weightUnit: 'kg',
+        heightCm: initialHeightCm,
+        heightFt: Math.floor(initialHeightCm / 30.48),
+        heightIn: Math.round((initialHeightCm / 2.54) % 12),
+        weightKg: initialWeightKg,
+        init() {
+            this.$watch('heightUnit', (newUnit) => {
+                if (newUnit === 'ft') {
+                    const totalInches = this.heightCm / 2.54;
+                    this.heightFt = Math.floor(totalInches / 12);
+                    this.heightIn = Math.round(totalInches % 12);
+                } else {
+                    this.heightCm = Math.round((this.heightFt * 30.48) + (this.heightIn * 2.54));
+                }
+            });
+            this.$watch('weightUnit', (newUnit) => {
+                if (newUnit === 'lbs') {
+                    this.weightKg = Math.round((this.weightKg * 2.20462) * 10) / 10;
+                } else {
+                    this.weightKg = Math.round((this.weightKg / 2.20462) * 10) / 10;
+                }
+            });
+        }
+    }
+}
+</script>
