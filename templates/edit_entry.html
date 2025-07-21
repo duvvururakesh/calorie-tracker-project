@@ -44,6 +44,9 @@
                     </div>
                 </div>
                 <input type="submit" class="w-full py-3 px-4 rounded-lg text-white font-semibold bg-green-500" value="Update Sleep">
+            {% elif entry_type == 'calories_burnt' %}
+                {{ form.calories_burnt(class="w-full p-3 bg-gray-800 border border-dark rounded-lg", placeholder="Calories Burnt") }}
+                <input type="submit" class="w-full py-3 px-4 rounded-lg text-white font-semibold bg-green-500" value="Update Calories Burnt">
             {% endif %}
         </form>
     </div>

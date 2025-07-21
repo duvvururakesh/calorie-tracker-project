@@ -43,6 +43,7 @@ class User(UserMixin, db.Model):
     step_goal = db.Column(db.Integer, default=10000)
     sleep_goal = db.Column(db.Float, default=8.0)
     calories_burnt_goal = db.Column(db.Integer, default=300)
+    # profile_image_url removed
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password, method='pbkdf2:sha256')
@@ -177,6 +178,7 @@ class AccountSettingsForm(FlaskForm):
     username = StringField('Username', validators=[DataRequired(), Length(min=4, max=25)])
     profile_name = StringField('Profile Name', validators=[Optional(), Length(max=120)])
     email = StringField('Email', validators=[DataRequired(), Email()])
+    # profile_image_url removed
     current_password = PasswordField('Current Password', validators=[Optional()])
     new_password = PasswordField('New Password', validators=[Optional(), Length(min=6)])
     confirm_new_password = PasswordField('Confirm New Password', validators=[Optional(), EqualTo('new_password')])
@@ -221,6 +223,19 @@ def home():
         'sleep': sum(e.duration_hours for e in sleep_entries),
         'calories_burnt': sum(e.calories_burnt for e in calories_burnt_entries)
     }
+
+    # Dynamic Macro Goal Pre-calculation
+    # Check if weight_kg is available and if goals are still at their default values
+    if current_user.weight_kg and current_user.weight_kg > 0:
+        # Check against default values (from User model defaults)
+        if current_user.protein_goal == 100:
+            current_user.protein_goal = int(1.6 * current_user.weight_kg)
+        if current_user.carbs_goal == 250:
+            current_user.carbs_goal = int(4 * current_user.weight_kg)
+        if current_user.fat_goal == 60:
+            current_user.fat_goal = int(0.8 * current_user.weight_kg)
+        # sugar_goal remains fixed at 50, no dynamic calculation needed
+        db.session.commit() # Commit changes if goals were updated
 
     goals = {
         'calorie_goal': current_user.calorie_goal or 0,
@@ -286,13 +301,39 @@ def home():
     goals_form = GoalsForm(obj=current_user)
     account_form = AccountSettingsForm(obj=current_user)
 
+    # Initialize all log forms for the home template
+    food_form = FoodLogForm()
+    water_form = WaterLogForm()
+    weight_form = WeightLogForm()
+    step_form = StepLogForm()
+    sleep_form = SleepLogForm()
+    calories_burnt_form = CaloriesBurntLogForm()
+
+    # Fetch all entries for the selected date for the log_entry.html include
+    entries = {
+        'food': FoodEntry.query.filter_by(user_id=current_user.id, date=selected_date).order_by(FoodEntry.time).all(),
+        'water': WaterEntry.query.filter_by(user_id=current_user.id, date=selected_date).all(),
+        'weight': WeightEntry.query.filter_by(user_id=current_user.id, date=selected_date).all(),
+        'steps': StepEntry.query.filter_by(user_id=current_user.id, date=selected_date).all(),
+        'sleep': SleepEntry.query.filter_by(user_id=current_user.id, date=selected_date).all(),
+        'calories_burnt': CaloriesBurntEntry.query.filter_by(user_id=current_user.id, date=selected_date).all()
+    }
+
+    # Determine first name for greeting
+    first_name = current_user.profile_name.split(' ')[0] if current_user.profile_name else current_user.username
+
     return render_template('home.html', title='Home',
                            # Dashboard data
                            totals=totals, goals=goals, 
                            selected_date=selected_date, prev_day=prev_day, next_day=next_day,
                            chart_data=chart_data, health_metrics=health_metrics,
                            # Settings data
-                           profile_form=profile_form, goals_form=goals_form, account_form=account_form)
+                           profile_form=profile_form, goals_form=goals_form, account_form=account_form,
+                           # Log forms and entries
+                           food_form=food_form, water_form=water_form, weight_form=weight_form,
+                           step_form=step_form, sleep_form=sleep_form, calories_burnt_form=calories_burnt_form,
+                           entries=entries, # Pass entries to the template
+                           first_name=first_name)
 
 
 @app.route('/signup', methods=['GET', 'POST'])
@@ -400,7 +441,8 @@ def log_entry(selected_date_str):
             flash('Calories burnt entry added!', 'success')
 
         db.session.commit()
-        return redirect(url_for('log_entry', selected_date_str=selected_date_str, tab=active_tab))
+        # After successful form submission, redirect to home with the 'log' view and correct date
+        return redirect(url_for('home', view='log', selected_date=selected_date_str, tab=active_tab))
 
     # Fetch all entries for the selected date
     entries = {
@@ -415,6 +457,10 @@ def log_entry(selected_date_str):
     prev_day = selected_date - timedelta(days=1)
     next_day = selected_date + timedelta(days=1)
 
+    # This route is now primarily for handling POST requests from the log forms
+    # The GET request rendering is handled by home.html including log_entry.html
+    # This return will only be hit if there's a GET request directly to /log_entry/date
+    # or if form validation fails on a POST.
     return render_template('log_entry.html', title='Add Entry', selected_date=selected_date,
                            prev_day=prev_day, next_day=next_day,
                            food_form=food_form, water_form=water_form, weight_form=weight_form, 
@@ -446,7 +492,7 @@ def delete_entry(entry_type, entry_id):
     db.session.delete(entry)
     db.session.commit()
     flash(f'{entry_type.replace("_", " ").capitalize()} entry deleted.', 'success')
-    return redirect(url_for('log_entry', selected_date_str=selected_date_str, tab=entry_type))
+    return redirect(url_for('home', view='log', selected_date=selected_date_str, tab=entry_type))
 
 
 @app.route('/edit_entry/<entry_type>/<int:entry_id>', methods=['GET', 'POST'])
@@ -506,7 +552,7 @@ def edit_entry(entry_type, entry_id):
 
         db.session.commit()
         flash(f'{entry_type.replace("_", " ").capitalize()} entry updated.', 'success')
-        return redirect(url_for('log_entry', selected_date_str=entry.date.strftime('%Y-%m-%d'), tab=entry_type))
+        return redirect(url_for('home', view='log', selected_date=entry.date.strftime('%Y-%m-%d'), tab=entry_type))
 
     return render_template('edit_entry.html', form=form, entry_type=entry_type, entry_id=entry.id, selected_date=entry.date)
 
@@ -582,12 +628,12 @@ def settings():
             user_changed = True
 
         if account_form.new_password.data:
-            if current_user.check_password(account_form.current_password.data):
+            if account_form.current_password.data and current_user.check_password(account_form.current_password.data):
                 current_user.set_password(account_form.new_password.data)
                 user_changed = True
                 flash('Password updated successfully.', 'success')
             else:
-                flash('Incorrect current password.', 'danger')
+                flash('Incorrect current password or current password not provided.', 'danger')
         
         if user_changed:
             db.session.commit()

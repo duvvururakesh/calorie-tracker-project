@@ -1,18 +1,12 @@
-{% extends "base.html" %}
-{% block content %}
 <div class="p-6" x-data="{ tab: '{{ request.args.get('tab', 'food') }}' }">
-    <div class="flex items-center mb-6 justify-center relative">
-        <a href="{{ url_for('home') }}" class="text-green-400 absolute left-0">&larr; Back</a>
-        <div class="flex items-center">
-            <a href="{{ url_for('log_entry', selected_date_str=prev_day.strftime('%Y-%m-%d')) }}" class="p-2 rounded-full hover:bg-gray-700">&lt;</a>
-            <h1 class="text-xl font-bold mx-4">
-                {% if selected_date == date.today() %}Today, {{ selected_date.strftime('%b %d') }}{% else %}{{ selected_date.strftime('%a, %b %d') }}{% endif %}
-            </h1>
-            <a href="{{ url_for('log_entry', selected_date_str=next_day.strftime('%Y-%m-%d')) }}" class="p-2 rounded-full hover:bg-gray-700">&gt;</a>
-        </div>
+    <div class="flex justify-between items-center mb-6 bg-dark p-2 rounded-xl">
+        <a href="{{ url_for('home', selected_date=prev_day.strftime('%Y-%m-%d')) }}" class="p-2 rounded-full hover:bg-gray-700">&lt;</a>
+        <h1 class="text-xl font-bold">
+            {% if selected_date == date.today() %}Today, {{ selected_date.strftime('%b %d') }}{% else %}{{ selected_date.strftime('%a, %b %d') }}{% endif %}
+        </h1>
+        <a href="{{ url_for('home', selected_date=next_day.strftime('%Y-%m-%d')) }}" class="p-2 rounded-full hover:bg-gray-700">&gt;</a>
     </div>
 
-    <!-- Tab Navigation -->
     <div class="border-b border-dark mb-4">
         <nav class="flex space-x-1 sm:space-x-2 -mb-px overflow-x-auto">
             <button @click="tab = 'food'" :class="{ 'border-green-500 text-green-500': tab === 'food', 'border-transparent text-gray-400': tab !== 'food' }" class="py-2 px-3 border-b-2 font-medium text-sm sm:text-base whitespace-nowrap">Food</button>
@@ -24,10 +18,8 @@
         </nav>
     </div>
 
-    <!-- Tab Content -->
     <div>
-        <!-- Food Tab -->
-        <div x-show="tab === 'food'" style="display: none;">
+        <div x-show="tab === 'food'">
             <div class="bg-dark p-4 rounded-xl">
                 <h3 class="text-xl font-bold mb-4">Log Food</h3>
                 <form method="POST" class="space-y-4">
@@ -66,8 +58,7 @@
             </div>
         </div>
 
-        <!-- Water Tab -->
-        <div x-show="tab === 'water'" style="display: none;">
+        <div x-show="tab === 'water'">
             <div class="bg-dark p-4 rounded-xl">
                 <h3 class="text-xl font-bold mb-4">Log Water</h3>
                 <form method="POST" class="space-y-4">
@@ -96,8 +87,7 @@
             </div>
         </div>
 
-        <!-- Weight Tab -->
-        <div x-show="tab === 'weight'" style="display: none;">
+        <div x-show="tab === 'weight'">
             <div class="bg-dark p-4 rounded-xl">
                 <h3 class="text-xl font-bold mb-4">Log Weight</h3>
                 <form method="POST" class="space-y-4" x-data="{ weightUnit: 'kg' }">
@@ -133,8 +123,7 @@
             </div>
         </div>
 
-        <!-- Steps Tab -->
-        <div x-show="tab === 'steps'" style="display: none;">
+        <div x-show="tab === 'steps'">
             <div class="bg-dark p-4 rounded-xl">
                 <h3 class="text-xl font-bold mb-4">Log Steps</h3>
                 <form method="POST" class="space-y-4">
@@ -163,8 +152,7 @@
             </div>
         </div>
 
-        <!-- Sleep Tab -->
-        <div x-show="tab === 'sleep'" style="display: none;">
+        <div x-show="tab === 'sleep'">
             <div class="bg-dark p-4 rounded-xl">
                 <h3 class="text-xl font-bold mb-4">Log Sleep</h3>
                 <form method="POST" class="space-y-4">
@@ -202,8 +190,7 @@
             </div>
         </div>
         
-        <!-- Calories Burnt Tab -->
-        <div x-show="tab === 'calories_burnt'" style="display: none;">
+        <div x-show="tab === 'calories_burnt'">
             <div class="bg-dark p-4 rounded-xl">
                 <h3 class="text-xl font-bold mb-4">Log Calories Burnt</h3>
                 <form method="POST" class="space-y-4">
@@ -234,4 +221,3 @@
 
     </div>
 </div>
-{% endblock %}
