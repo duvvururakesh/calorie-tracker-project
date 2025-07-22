@@ -196,7 +196,7 @@ def index():
         return redirect(url_for('login'))
     return redirect(url_for('home'))
 
-@app.route('/home')
+@app.route('/home', methods=['GET', 'POST']) # Allow POST requests to home
 @login_required
 def home():
     # Data for Dashboard
@@ -206,11 +206,166 @@ def home():
     except ValueError:
         selected_date = date.today()
 
+    # Initialize all forms for the home template
+    food_form = FoodLogForm()
+    water_form = WaterLogForm()
+    weight_form = WeightLogForm()
+    step_form = StepLogForm()
+    sleep_form = SleepLogForm()
+    calories_burnt_form = CaloriesBurntLogForm()
+
+    # Handle form submissions from log_entry.html
+    if request.method == 'POST':
+        active_tab = request.args.get('tab', 'food') # Get the active tab from query params
+        if 'submit_food' in request.form and food_form.validate_on_submit():
+            entry = FoodEntry(user_id=current_user.id, date=selected_date, time=food_form.food_time.data, 
+                              name=food_form.food_name.data, calories=food_form.calories.data,
+                              protein=food_form.protein.data or 0, carbs=food_form.carbs.data or 0, 
+                              fat=food_form.fat.data or 0, sugar=food_form.sugar.data or 0)
+            db.session.add(entry)
+            db.session.commit()
+            flash('Food entry added!', 'success')
+            return redirect(url_for('home', view='log', selected_date=selected_date_str, tab='food'))
+        elif 'submit_water' in request.form and water_form.validate_on_submit():
+            amount = water_form.water_amount.data
+            entry = WaterEntry(user_id=current_user.id, date=selected_date, amount_ml=amount)
+            db.session.add(entry)
+            db.session.commit()
+            flash('Water entry added!', 'success')
+            return redirect(url_for('home', view='log', selected_date=selected_date_str, tab='water'))
+        elif 'submit_weight' in request.form and weight_form.validate_on_submit():
+            weight = weight_form.weight_amount.data
+            unit = request.form.get('weight_unit', 'kg')
+            if unit == 'lbs':
+                weight *= 0.453592
+            entry = WeightEntry(user_id=current_user.id, date=selected_date, weight_kg=weight)
+            db.session.add(entry)
+            db.session.commit()
+            flash('Weight entry added!', 'success')
+            return redirect(url_for('home', view='log', selected_date=selected_date_str, tab='weight'))
+        elif 'submit_steps' in request.form and step_form.validate_on_submit():
+            entry = StepEntry(user_id=current_user.id, date=selected_date, steps=step_form.step_amount.data)
+            db.session.add(entry)
+            db.session.commit()
+            flash('Step entry added!', 'success')
+            return redirect(url_for('home', view='log', selected_date=selected_date_str, tab='steps'))
+        elif 'submit_sleep' in request.form and sleep_form.validate_on_submit():
+            sleep_time = sleep_form.sleep_time.data
+            wake_time = sleep_form.wake_time.data
+            dummy_date = date.today()
+            start = datetime.combine(dummy_date, sleep_time)
+            end = datetime.combine(dummy_date, wake_time)
+            if end <= start:
+                end += timedelta(days=1)
+            duration = end - start
+            duration_hours = duration.total_seconds() / 3600
+            entry = SleepEntry(user_id=current_user.id, date=selected_date, 
+                               duration_hours=duration_hours, sleep_time=sleep_time, wake_time=wake_time)
+            db.session.add(entry)
+            db.session.commit()
+            flash('Sleep entry added!', 'success')
+            return redirect(url_for('home', view='log', selected_date=selected_date_str, tab='sleep'))
+        elif 'submit_calories_burnt' in request.form and calories_burnt_form.validate_on_submit():
+            entry = CaloriesBurntEntry(user_id=current_user.id, date=selected_date, calories_burnt=calories_burnt_form.calories_burnt.data)
+            db.session.add(entry)
+            db.session.commit()
+            flash('Calories burnt entry added!', 'success')
+            return redirect(url_for('home', view='log', selected_date=selected_date_str, tab='calories_burnt'))
+        
+        # If any other form is submitted (e.g., from settings), process it here
+        profile_form = ProfileForm(request.form)
+        goals_form = GoalsForm(request.form)
+        account_form = AccountSettingsForm(request.form)
+
+        if 'submit_profile' in request.form and profile_form.validate():
+            height_unit = request.form.get('height_unit')
+            weight_unit = request.form.get('weight_unit')
+
+            if height_unit == 'ft':
+                ft = profile_form.height_ft.data or 0
+                inch = profile_form.height_in.data or 0
+                current_user.height_cm = (ft * 30.48) + (inch * 2.54)
+            else:
+                current_user.height_cm = profile_form.height_cm.data
+
+            original_weight = current_user.weight_kg
+            new_weight_input = profile_form.weight_kg.data
+            
+            if new_weight_input is not None:
+                new_weight = new_weight_input
+                if weight_unit == 'lbs':
+                    new_weight = new_weight * 0.453592
+                
+                if new_weight != original_weight:
+                    current_user.weight_kg = new_weight
+                    today_entry = WeightEntry.query.filter_by(user_id=current_user.id, date=date.today()).first()
+                    if today_entry:
+                        today_entry.weight_kg = new_weight
+                    else:
+                        new_entry = WeightEntry(user_id=current_user.id, date=date.today(), weight_kg=new_weight)
+                        db.session.add(new_entry)
+                    flash('Weight auto-logged for today.', 'info')
+
+            current_user.date_of_birth = profile_form.date_of_birth.data
+            current_user.gender = profile_form.gender.data
+            current_user.activity_level = profile_form.activity_level.data
+            
+            db.session.commit()
+            flash('Profile settings updated.', 'success')
+            return redirect(url_for('home', view='settings', tab='profile'))
+
+        if 'submit_goals' in request.form and goals_form.validate():
+            current_user.calorie_goal = goals_form.calorie_goal.data
+            current_user.calories_burnt_goal = goals_form.calories_burnt_goal.data
+            current_user.protein_goal = goals_form.protein_goal.data
+            current_user.carbs_goal = goals_form.carbs_goal.data
+            current_user.fat_goal = goals_form.fat_goal.data
+            current_user.sugar_goal = goals_form.sugar_goal.data
+            current_user.water_goal = goals_form.water_goal.data
+            current_user.step_goal = goals_form.step_goal.data
+            current_user.sleep_goal = goals_form.sleep_goal.data
+            db.session.commit()
+            flash('Goal settings updated.', 'success')
+            return redirect(url_for('home', view='goals')) # Redirect to goals tab
+        
+        if 'submit_account' in request.form and account_form.validate():
+            user_changed = False
+            if current_user.username != account_form.username.data or \
+               current_user.profile_name != account_form.profile_name.data or \
+               current_user.email != account_form.email.data:
+                current_user.username = account_form.username.data
+                current_user.profile_name = account_form.profile_name.data
+                current_user.email = account_form.email.data
+                user_changed = True
+
+            if account_form.new_password.data:
+                if account_form.current_password.data and current_user.check_password(account_form.current_password.data):
+                    current_user.set_password(account_form.new_password.data)
+                    user_changed = True
+                    flash('Password updated successfully.', 'success')
+                else:
+                    flash('Incorrect current password or current password not provided.', 'danger')
+            
+            if user_changed:
+                db.session.commit()
+                flash('Account settings updated.', 'success')
+            return redirect(url_for('home', view='settings', tab='account'))
+
+    # If it's a GET request or form validation failed, prepare data for rendering
     food_entries = FoodEntry.query.filter_by(user_id=current_user.id, date=selected_date).all()
     water_entries = WaterEntry.query.filter_by(user_id=current_user.id, date=selected_date).all()
     step_entries = StepEntry.query.filter_by(user_id=current_user.id, date=selected_date).all()
     sleep_entries = SleepEntry.query.filter_by(user_id=current_user.id, date=selected_date).all()
     calories_burnt_entries = CaloriesBurntEntry.query.filter_by(user_id=current_user.id, date=selected_date).all()
+
+    entries = {
+        'food': food_entries,
+        'water': water_entries,
+        'weight': WeightEntry.query.filter_by(user_id=current_user.id, date=selected_date).all(),
+        'steps': step_entries,
+        'sleep': sleep_entries,
+        'calories_burnt': calories_burnt_entries
+    }
 
     totals = {
         'calories': sum(e.calories for e in food_entries),
@@ -225,17 +380,14 @@ def home():
     }
 
     # Dynamic Macro Goal Pre-calculation
-    # Check if weight_kg is available and if goals are still at their default values
     if current_user.weight_kg and current_user.weight_kg > 0:
-        # Check against default values (from User model defaults)
         if current_user.protein_goal == 100:
             current_user.protein_goal = int(1.6 * current_user.weight_kg)
         if current_user.carbs_goal == 250:
             current_user.carbs_goal = int(4 * current_user.weight_kg)
         if current_user.fat_goal == 60:
             current_user.fat_goal = int(0.8 * current_user.weight_kg)
-        # sugar_goal remains fixed at 50, no dynamic calculation needed
-        db.session.commit() # Commit changes if goals were updated
+        db.session.commit()
 
     goals = {
         'calorie_goal': current_user.calorie_goal or 0,
@@ -281,8 +433,7 @@ def home():
         health_metrics['calorie_deficit'] = int(maintenance_calories - totals['calories'])
 
 
-    today = date.today()
-    start_of_week = today - timedelta(days=6)
+    start_of_week = date.today() - timedelta(days=6)
     weight_data = WeightEntry.query.filter(WeightEntry.user_id == current_user.id, WeightEntry.date >= start_of_week).order_by(WeightEntry.date).all()
     sleep_chart_data = SleepEntry.query.filter(SleepEntry.user_id == current_user.id, SleepEntry.date >= start_of_week).order_by(SleepEntry.date).all()
 
@@ -296,28 +447,13 @@ def home():
     prev_day = selected_date - timedelta(days=1)
     next_day = selected_date + timedelta(days=1)
     
-    # Data for Settings
-    profile_form = ProfileForm(obj=current_user)
-    goals_form = GoalsForm(obj=current_user)
-    account_form = AccountSettingsForm(obj=current_user)
-
-    # Initialize all log forms for the home template
-    food_form = FoodLogForm()
-    water_form = WaterLogForm()
-    weight_form = WeightLogForm()
-    step_form = StepLogForm()
-    sleep_form = SleepLogForm()
-    calories_burnt_form = CaloriesBurntLogForm()
-
-    # Fetch all entries for the selected date for the log_entry.html include
-    entries = {
-        'food': FoodEntry.query.filter_by(user_id=current_user.id, date=selected_date).order_by(FoodEntry.time).all(),
-        'water': WaterEntry.query.filter_by(user_id=current_user.id, date=selected_date).all(),
-        'weight': WeightEntry.query.filter_by(user_id=current_user.id, date=selected_date).all(),
-        'steps': StepEntry.query.filter_by(user_id=current_user.id, date=selected_date).all(),
-        'sleep': SleepEntry.query.filter_by(user_id=current_user.id, date=selected_date).all(),
-        'calories_burnt': CaloriesBurntEntry.query.filter_by(user_id=current_user.id, date=selected_date).all()
-    }
+    # Data for Settings (re-initialize if not a POST request, or if validation failed)
+    if request.method == 'GET' or not profile_form.validate():
+        profile_form = ProfileForm(obj=current_user)
+    if request.method == 'GET' or not goals_form.validate():
+        goals_form = GoalsForm(obj=current_user)
+    if request.method == 'GET' or not account_form.validate():
+        account_form = AccountSettingsForm(obj=current_user)
 
     # Determine first name for greeting
     first_name = current_user.profile_name.split(' ')[0] if current_user.profile_name else current_user.username
@@ -373,7 +509,11 @@ def logout():
     return redirect(url_for('login'))
 
 
-@app.route('/log_entry/<selected_date_str>', methods=['GET', 'POST'])
+# The /log_entry route is no longer needed for POST submissions,
+# as they are handled by the /home route.
+# This route can be removed or kept for direct GET access if desired,
+# but its primary function for form submission is now in /home.
+@app.route('/log_entry/<selected_date_str>', methods=['GET'])
 @login_required
 def log_entry(selected_date_str):
     selected_date = datetime.strptime(selected_date_str, "%Y-%m-%d").date()
@@ -386,63 +526,6 @@ def log_entry(selected_date_str):
     calories_burnt_form = CaloriesBurntLogForm()
     
     active_tab = request.args.get('tab', 'food')
-
-    if request.method == 'POST':
-        if 'submit_food' in request.form and food_form.validate_on_submit():
-            active_tab = 'food'
-            entry = FoodEntry(user_id=current_user.id, date=selected_date, time=food_form.food_time.data, 
-                              name=food_form.food_name.data, calories=food_form.calories.data,
-                              protein=food_form.protein.data or 0, carbs=food_form.carbs.data or 0, 
-                              fat=food_form.fat.data or 0, sugar=food_form.sugar.data or 0)
-            db.session.add(entry)
-            flash('Food entry added!', 'success')
-        elif 'submit_water' in request.form and water_form.validate_on_submit():
-            active_tab = 'water'
-            amount = water_form.water_amount.data
-            entry = WaterEntry(user_id=current_user.id, date=selected_date, amount_ml=amount)
-            db.session.add(entry)
-            flash('Water entry added!', 'success')
-        elif 'submit_weight' in request.form and weight_form.validate_on_submit():
-            active_tab = 'weight'
-            weight = weight_form.weight_amount.data
-            unit = request.form.get('weight_unit', 'kg')
-            if unit == 'lbs':
-                weight *= 0.453592
-            
-            entry = WeightEntry(user_id=current_user.id, date=selected_date, weight_kg=weight)
-            db.session.add(entry)
-            flash('Weight entry added!', 'success')
-        elif 'submit_steps' in request.form and step_form.validate_on_submit():
-            active_tab = 'steps'
-            entry = StepEntry(user_id=current_user.id, date=selected_date, steps=step_form.step_amount.data)
-            db.session.add(entry)
-            flash('Step entry added!', 'success')
-        elif 'submit_sleep' in request.form and sleep_form.validate_on_submit():
-            active_tab = 'sleep'
-            sleep_time = sleep_form.sleep_time.data
-            wake_time = sleep_form.wake_time.data
-            dummy_date = date.today()
-            start = datetime.combine(dummy_date, sleep_time)
-            end = datetime.combine(dummy_date, wake_time)
-
-            if end <= start:
-                end += timedelta(days=1)
-            duration = end - start
-            duration_hours = duration.total_seconds() / 3600
-
-            entry = SleepEntry(user_id=current_user.id, date=selected_date, 
-                               duration_hours=duration_hours, sleep_time=sleep_time, wake_time=wake_time)
-            db.session.add(entry)
-            flash('Sleep entry added!', 'success')
-        elif 'submit_calories_burnt' in request.form and calories_burnt_form.validate_on_submit():
-            active_tab = 'calories_burnt'
-            entry = CaloriesBurntEntry(user_id=current_user.id, date=selected_date, calories_burnt=calories_burnt_form.calories_burnt.data)
-            db.session.add(entry)
-            flash('Calories burnt entry added!', 'success')
-
-        db.session.commit()
-        # After successful form submission, redirect to home with the 'log' view and correct date
-        return redirect(url_for('home', view='log', selected_date=selected_date_str, tab=active_tab))
 
     # Fetch all entries for the selected date
     entries = {
@@ -457,10 +540,6 @@ def log_entry(selected_date_str):
     prev_day = selected_date - timedelta(days=1)
     next_day = selected_date + timedelta(days=1)
 
-    # This route is now primarily for handling POST requests from the log forms
-    # The GET request rendering is handled by home.html including log_entry.html
-    # This return will only be hit if there's a GET request directly to /log_entry/date
-    # or if form validation fails on a POST.
     return render_template('log_entry.html', title='Add Entry', selected_date=selected_date,
                            prev_day=prev_day, next_day=next_day,
                            food_form=food_form, water_form=water_form, weight_form=weight_form, 
@@ -557,90 +636,18 @@ def edit_entry(entry_type, entry_id):
     return render_template('edit_entry.html', form=form, entry_type=entry_type, entry_id=entry.id, selected_date=entry.date)
 
 
-@app.route('/settings', methods=['POST'])
+# The /settings route is no longer needed for POST submissions,
+# as they are handled by the /home route.
+# This route can be removed or kept for direct GET access if desired,
+# but its primary function for form submission is now in /home.
+@app.route('/settings', methods=['GET'])
 @login_required
 def settings():
-    # This route now only handles POST requests from settings forms
-    profile_form = ProfileForm()
-    goals_form = GoalsForm()
-    account_form = AccountSettingsForm()
-
-    if 'submit_profile' in request.form and profile_form.validate():
-        height_unit = request.form.get('height_unit')
-        weight_unit = request.form.get('weight_unit')
-
-        if height_unit == 'ft':
-            ft = profile_form.height_ft.data or 0
-            inch = profile_form.height_in.data or 0
-            current_user.height_cm = (ft * 30.48) + (inch * 2.54)
-        else:
-            current_user.height_cm = profile_form.height_cm.data
-
-        original_weight = current_user.weight_kg
-        new_weight_input = profile_form.weight_kg.data
-        
-        if new_weight_input is not None:
-            new_weight = new_weight_input
-            if weight_unit == 'lbs':
-                new_weight = new_weight * 0.453592
-            
-            if new_weight != original_weight:
-                current_user.weight_kg = new_weight
-                today_entry = WeightEntry.query.filter_by(user_id=current_user.id, date=date.today()).first()
-                if today_entry:
-                    today_entry.weight_kg = new_weight
-                else:
-                    new_entry = WeightEntry(user_id=current_user.id, date=date.today(), weight_kg=new_weight)
-                    db.session.add(new_entry)
-                flash('Weight auto-logged for today.', 'info')
-
-        current_user.date_of_birth = profile_form.date_of_birth.data
-        current_user.gender = profile_form.gender.data
-        current_user.activity_level = profile_form.activity_level.data
-        
-        db.session.commit()
-        flash('Profile settings updated.', 'success')
-        return redirect(url_for('home', view='settings', tab='profile'))
-
-    if 'submit_goals' in request.form and goals_form.validate():
-        # Manually populate since populate_obj doesn't work well with multiple forms
-        current_user.calorie_goal = goals_form.calorie_goal.data
-        current_user.calories_burnt_goal = goals_form.calories_burnt_goal.data
-        current_user.protein_goal = goals_form.protein_goal.data
-        current_user.carbs_goal = goals_form.carbs_goal.data
-        current_user.fat_goal = goals_form.fat_goal.data
-        current_user.sugar_goal = goals_form.sugar_goal.data
-        current_user.water_goal = goals_form.water_goal.data
-        current_user.step_goal = goals_form.step_goal.data
-        current_user.sleep_goal = goals_form.sleep_goal.data
-        db.session.commit()
-        flash('Goal settings updated.', 'success')
-        return redirect(url_for('home', view='settings', tab='goals'))
-
-    if 'submit_account' in request.form and account_form.validate():
-        user_changed = False
-        if current_user.username != account_form.username.data or \
-           current_user.profile_name != account_form.profile_name.data or \
-           current_user.email != account_form.email.data:
-            current_user.username = account_form.username.data
-            current_user.profile_name = account_form.profile_name.data
-            current_user.email = account_form.email.data
-            user_changed = True
-
-        if account_form.new_password.data:
-            if account_form.current_password.data and current_user.check_password(account_form.current_password.data):
-                current_user.set_password(account_form.new_password.data)
-                user_changed = True
-                flash('Password updated successfully.', 'success')
-            else:
-                flash('Incorrect current password or current password not provided.', 'danger')
-        
-        if user_changed:
-            db.session.commit()
-            flash('Account settings updated.', 'success')
-        return redirect(url_for('home', view='settings', tab='account'))
-
-    return redirect(url_for('home'))
+    # This route now only handles GET requests for the settings page
+    profile_form = ProfileForm(obj=current_user)
+    goals_form = GoalsForm(obj=current_user)
+    account_form = AccountSettingsForm(obj=current_user)
+    return render_template('settings.html', profile_form=profile_form, goals_form=goals_form, account_form=account_form)
 
 
 if __name__ == '__main__':

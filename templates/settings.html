@@ -7,10 +7,11 @@
             </nav>
         </div>
 
-        <div x-show="tab === 'profile'" style="display: none;">
-            <form action="{{ url_for('settings') }}" method="POST">
+        <div x-show="tab === 'profile'"> {# Removed style="display: none;" #}
+            <form action="{{ url_for('home', view='settings', tab='profile') }}" method="POST">
                 {{ profile_form.hidden_tag() }}
                 <div class="space-y-4">
+                    <!-- Height Input -->
                     <div>
                         <label class="block text-sm font-medium text-gray-400">Height</label>
                         <div class="flex items-center space-x-2 mt-1">
@@ -33,6 +34,7 @@
                             </ul>
                         {% endif %}
                     </div>
+                    <!-- Weight Input -->
                     <div>
                         <label class="block text-sm font-medium text-gray-400">Weight</label>
                         <div class="flex items-center space-x-2 mt-1">
@@ -90,10 +92,14 @@
             </form>
         </div>
         
+        <!-- Goals Tab removed from here -->
+
         <div x-show="tab === 'account'" style="display: none;">
-            <form action="{{ url_for('settings') }}" method="POST">
+            <form action="{{ url_for('home', view='settings', tab='account') }}" method="POST">
                 {{ account_form.hidden_tag() }}
                 <div class="space-y-4">
+                    <!-- Profile Picture Section removed -->
+
                     <div>
                         {{ account_form.username.label(class="block text-sm font-medium text-gray-400") }}
                         {{ account_form.username(class="mt-1 w-full p-3 bg-gray-800 border border-dark rounded-lg") }}
