@@ -1,135 +1,181 @@
-<div class="p-6 relative">
-    <!-- First line: Hi Firstname (left) and Hamburger Menu (right) -->
-    <div class="flex justify-between items-center mb-2 bg-dark p-2 rounded-xl">
+{% extends "base.html" %}
+{% block content %}
+<div class="p-6 pb-24" x-data="{showBMIStatus: false, showLbs: false}">
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-6">
         <div class="flex-1 text-left">
-            <span class="text-xl font-bold text-white">Hi {{ first_name }}</span>
+            <h1 class="text-3xl font-bold">Hi {{ first_name }} 👋</h1>
+            <p class="text-lg text-gray-400">Welcome back.</p>
         </div>
-        <div class="flex-1 text-right">
-            <button @click="view = 'settings'" class="p-2 rounded-full hover:bg-gray-700">
-                <svg class="w-6 h-6 text-white inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
-            </button>
-        </div>
+        <a href="{{ url_for('settings') }}" class="p-2 rounded-full hover:bg-gray-700">
+            <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2c-5.52 0-10 4.48-10 10s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17.93v-2.07c3.29-.75 5.7-3.66 5.7-7.01s-2.41-6.26-5.7-7.01V4.07c4.66.78 8.21 4.95 8.21 9.93s-3.55 9.15-8.21 9.93z"></path></svg>
+        </a>
     </div>
 
-    <!-- Second line: Date Navigation (like log entry page) -->
+    <!-- Date Navigation -->
     <div class="flex justify-between items-center mb-6 bg-dark p-2 rounded-xl">
-        <a href="{{ url_for('home', selected_date=prev_day.strftime('%Y-%m-%d')) }}" class="p-2 rounded-full hover:bg-gray-700">&lt;</a>
-        <h1 class="text-xl font-bold">
-            {% if selected_date == date.today() %}Today, {{ selected_date.strftime('%b %d') }}{% else %}{{ selected_date.strftime('%a, %b %d') }}{% endif %}
-        </h1>
-        <a href="{{ url_for('home', selected_date=next_day.strftime('%Y-%m-%d')) }}" class="p-2 rounded-full hover:bg-gray-700">&gt;</a>
+        <a href="{{ url_for('dashboard', selected_date=prev_day.strftime('%Y-%m-%d')) }}" class="p-2 rounded-full hover:bg-gray-700">&lt;</a>
+        <h2 class="text-xl font-bold">
+            {% if selected_date == date.today() %}Today{% else %}{{ selected_date.strftime('%a, %b %d') }}{% endif %}
+        </h2>
+        <a href="{{ url_for('dashboard', selected_date=next_day.strftime('%Y-%m-%d')) }}" class="p-2 rounded-full hover:bg-gray-700">&gt;</a>
     </div>
 
-    <div class="grid grid-cols-2 gap-4 mb-6">
-        <div class="bg-dark p-4 rounded-xl text-center">
-            <h2 class="text-lg font-bold mb-2">Calorie Intake</h2>
+    <!-- Main Metrics -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <div class="bg-dark p-4 rounded-xl text-center shadow-lg">
+            <h3 class="text-lg font-bold mb-2 text-gray-300">Calorie Intake</h3>
             <div class="relative w-32 h-32 mx-auto">
                 <canvas id="calorieRingChart"></canvas>
+                <div class="absolute inset-0 flex items-center justify-center flex-col">
+                    <span class="text-xl font-bold text-teal">{{ totals.calories|int }}</span>
+                    <span class="text-sm text-gray-400">/ {{ goals.calorie_goal|int }}</span>
+                </div>
             </div>
-            <div class="mt-2">
-                <span class="text-2xl font-bold">{{ totals.calories|int }}</span>
-                <span class="text-md text-gray-400">/ {{ goals.calorie_goal|int }}</span>
+            <div class="flex justify-around text-xs mt-2">
+                <span class="text-teal">Goal: {{ goals.calorie_goal|int }}</span>
+                <span class="text-red-400">Net: {{ (totals.calories - totals.calories_burnt)|int }}</span>
             </div>
         </div>
-        <div class="bg-dark p-4 rounded-xl text-center">
-            <h2 class="text-lg font-bold mb-2">Calories Burnt</h2>
+        <div class="bg-dark p-4 rounded-xl text-center shadow-lg">
+            <h3 class="text-lg font-bold mb-2 text-gray-300">Calories Burnt</h3>
             <div class="relative w-32 h-32 mx-auto">
                 <canvas id="caloriesBurntRingChart"></canvas>
+                <div class="absolute inset-0 flex items-center justify-center flex-col">
+                    <span class="text-xl font-bold text-teal">{{ totals.calories_burnt|int }}</span>
+                    <span class="text-sm text-gray-400">/ {{ goals.calories_burnt_goal|int }}</span>
+                </div>
             </div>
-            <div class="mt-2">
-                <span class="text-2xl font-bold">{{ totals.calories_burnt|int }}</span>
-                <span class="text-md text-gray-400">/ {{ goals.calories_burnt_goal|int }}</span>
+            <div class="mt-2 text-xs">
+                <span class="text-teal">Goal: {{ goals.calories_burnt_goal|int }}</span>
             </div>
         </div>
     </div>
 
 
+    <!-- Health Metrics Grid -->
     <div class="grid grid-cols-2 gap-4 mb-6">
-        <div class="bg-dark p-4 rounded-xl text-center">
+        <!-- Toggable BMI Card -->
+        <div @click="showBMIStatus = !showBMIStatus" class="bg-dark p-4 rounded-xl text-center shadow-lg cursor-pointer">
             <p class="text-sm text-gray-400">BMI</p>
-            <p class="text-2xl font-bold">{{ health_metrics.bmi }}</p>
+            <p class="text-xl font-bold text-teal">{{ health_metrics.bmi }}</p>
+            <p class="text-xs text-gray-500" x-show="!showBMIStatus">{{ health_metrics.bmi_status }}</p>
+            <p class="text-xs text-gray-500" x-show="showBMIStatus" style="display: none;">Tap to hide status</p>
         </div>
-        <div class="bg-dark p-4 rounded-xl text-center">
-            <p class="text-sm text-gray-400">BMI Status</p>
-            <p class="text-2xl font-bold">{{ health_metrics.bmi_status }}</p>
+        <!-- Toggable Weight Card -->
+        <div @click="showLbs = !showLbs" class="bg-dark p-4 rounded-xl text-center shadow-lg cursor-pointer">
+            <p class="text-sm text-gray-400">Current Weight</p>
+            <p class="text-xl font-bold text-teal" x-text="showLbs ? '{{ formatted_weight.lbs }}' : '{{ formatted_weight.kg }}'"></p>
+            <p class="text-xs text-gray-500" x-text="showLbs ? 'lbs' : 'kg'"></p>
         </div>
-        <div class="bg-dark p-4 rounded-xl text-center">
-            <p class="text-sm text-gray-400">Maintenance</p>
-            <p class="text-2xl font-bold">{{ health_metrics.maintenance_calories }}</p>
+        <!-- Maintenance Card -->
+        <div class="bg-dark p-4 rounded-xl text-center shadow-lg">
+            <p class="text-sm text-gray-400">Required Maintenance</p>
+            <p class="text-xl font-bold text-teal">{{ health_metrics.maintenance_calories }}</p>
+            <p class="text-xs text-gray-500">kcal/day</p>
         </div>
-        <div class="bg-dark p-4 rounded-xl text-center">
-            <p class="text-sm text-gray-400">Calorie Deficit</p>
-            <p class="text-2xl font-bold 
-                {% if health_metrics.calorie_deficit != 'N/A' and health_metrics.calorie_deficit >= 0 %}
+        <!-- Calorie Deficit Card -->
+        <div class="bg-dark p-4 rounded-xl text-center shadow-lg">
+            <p class="text-sm text-gray-400">Calorie Deficit Today</p>
+            <p class="text-xl font-bold 
+                {% if health_metrics.calorie_deficit != 'N/A' and health_metrics.calorie_deficit|float >= 0 %}
                     text-green-500
                 {% elif health_metrics.calorie_deficit != 'N/A' %}
                     text-red-500
                 {% endif %}
             ">{{ health_metrics.calorie_deficit }}</p>
+            <p class="text-xs text-gray-500">kcal</p>
         </div>
     </div>
 
-    <div class="bg-dark p-6 rounded-xl mb-6">
+    <!-- Macros Section with four rings -->
+    <div class="bg-dark p-6 rounded-xl mb-6 shadow-lg">
         <h2 class="text-xl font-bold mb-4 text-center">Macros</h2>
-        <div class="grid grid-cols-4 gap-4 text-center">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
             <div>
-                <canvas id="proteinRingChart" height="120"></canvas>
-                <p class="mt-2 font-bold">{{ totals.protein|int }} / {{ goals.protein_goal|int }}g</p>
-                <p class="text-sm text-gray-400">Protein</p>
+                <div class="relative w-24 h-24 mx-auto">
+                    <canvas id="proteinRingChart"></canvas>
+                    <div class="absolute inset-0 flex items-center justify-center flex-col">
+                        <span class="text-md font-bold text-red-400">{{ totals.protein|int }}g</span>
+                        <span class="text-xs text-gray-400">/ {{ goals.protein_goal|int }}g</span>
+                    </div>
+                </div>
+                <p class="mt-2 font-bold text-sm">Protein</p>
             </div>
             <div>
-                <canvas id="carbsRingChart" height="120"></canvas>
-                <p class="mt-2 font-bold">{{ totals.carbs|int }} / {{ goals.carbs_goal|int }}g</p>
-                <p class="text-sm text-gray-400">Carbs</p>
+                <div class="relative w-24 h-24 mx-auto">
+                    <canvas id="carbsRingChart"></canvas>
+                    <div class="absolute inset-0 flex items-center justify-center flex-col">
+                        <span class="text-md font-bold text-blue-400">{{ totals.carbs|int }}g</span>
+                        <span class="text-xs text-gray-400">/ {{ goals.carbs_goal|int }}g</span>
+                    </div>
+                </div>
+                <p class="mt-2 font-bold text-sm">Carbs</p>
             </div>
             <div>
-                <canvas id="fatRingChart" height="120"></canvas>
-                <p class="mt-2 font-bold">{{ totals.fat|int }} / {{ goals.fat_goal|int }}g</p>
-                <p class="text-sm text-gray-400">Fat</p>
+                <div class="relative w-24 h-24 mx-auto">
+                    <canvas id="fatRingChart"></canvas>
+                    <div class="absolute inset-0 flex items-center justify-center flex-col">
+                        <span class="text-md font-bold text-amber-400">{{ totals.fat|int }}g</span>
+                        <span class="text-xs text-gray-400">/ {{ goals.fat_goal|int }}g</span>
+                    </div>
+                </div>
+                <p class="mt-2 font-bold text-sm">Fat</p>
             </div>
             <div>
-                <canvas id="sugarRingChart" height="120"></canvas>
-                <p class="mt-2 font-bold">{{ totals.sugar|int }} / {{ goals.sugar_goal|int }}g</p>
-                <p class="text-sm text-gray-400">Sugar</p>
+                <div class="relative w-24 h-24 mx-auto">
+                    <canvas id="sugarRingChart"></canvas>
+                    <div class="absolute inset-0 flex items-center justify-center flex-col">
+                        <span class="text-md font-bold text-purple-400">{{ totals.sugar|int }}g</span>
+                        <span class="text-xs text-gray-400">/ {{ goals.sugar_goal|int }}g</span>
+                    </div>
+                </div>
+                <p class="mt-2 font-bold text-sm">Sugar</p>
             </div>
         </div>
     </div>
 
-    <div class="bg-dark p-6 rounded-xl mb-6 space-y-4">
+    <!-- Activity Section -->
+    <div class="bg-dark p-6 rounded-xl mb-6 space-y-4 shadow-lg">
         <h2 class="text-xl font-bold mb-2">Activity</h2>
         <div>
             <h3 class="font-bold text-lg">Water</h3>
-            <div class="w-full bg-gray-700 rounded-full h-2.5 my-2"><div id="water-progress" class="bg-blue-500 h-2.5 rounded-full"></div></div>
+            <div class="w-full bg-gray-700 rounded-full h-2.5 my-2">
+                <div id="water-progress" class="bg-blue-400 h-2.5 rounded-full transition-all duration-500 ease-in-out"></div>
+            </div>
             <p class="text-sm text-gray-400">{{ totals.water|int }} / {{ goals.water_goal }} ml</p>
         </div>
         <div>
             <h3 class="font-bold text-lg">Steps</h3>
-            <div class="w-full bg-gray-700 rounded-full h-2.5 my-2"><div id="step-progress" class="bg-amber-500 h-2.5 rounded-full"></div></div>
+            <div class="w-full bg-gray-700 rounded-full h-2.5 my-2">
+                <div id="step-progress" class="bg-amber-500 h-2.5 rounded-full transition-all duration-500 ease-in-out"></div>
+            </div>
             <p class="text-sm text-gray-400">{{ totals.steps|int }} / {{ goals.step_goal }}</p>
         </div>
         <div>
             <h3 class="font-bold text-lg">Sleep</h3>
-            <div class="w-full bg-gray-700 rounded-full h-2.5 my-2"><div id="sleep-progress" class="bg-violet-500 h-2.5 rounded-full"></div></div>
+            <div class="w-full bg-gray-700 rounded-full h-2.5 my-2">
+                <div id="sleep-progress" class="bg-violet-500 h-2.5 rounded-full transition-all duration-500 ease-in-out"></div>
+            </div>
             <p class="text-sm text-gray-400">{{ "%.1f"|format(totals.sleep) }} / {{ "%.1f"|format(goals.sleep_goal) }} hours</p>
         </div>
     </div>
     
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div class="bg-dark p-4 rounded-xl">
+    <!-- Trend Charts -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pb-24">
+        <div class="bg-dark p-4 rounded-xl shadow-lg">
             <h3 class="font-bold text-lg">Weight Trend</h3>
-            <canvas id="weightChart"></canvas>
+            <canvas id="weightChart" style="max-height: 200px;"></canvas>
         </div>
-        <div class="bg-dark p-4 rounded-xl">
+        <div class="bg-dark p-4 rounded-xl shadow-lg">
             <h3 class="font-bold text-lg">Sleep Trend</h3>
-            <canvas id="sleepChart"></canvas>
+            <canvas id="sleepChart" style="max-height: 200px;"></canvas>
         </div>
     </div>
 
-    </div>
+</div>
 
 <script>
-// This script needs to be re-initialized when the view is shown.
-// A more robust solution would be to use a custom Alpine.js event.
 document.addEventListener('DOMContentLoaded', function () {
     const totals = JSON.parse('{{ totals | tojson | safe }}');
     const goals = JSON.parse('{{ goals | tojson | safe }}');
@@ -144,38 +190,94 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         const remaining = Math.max(0, goal - value);
+        const data = {
+            labels: ['Achieved', 'Remaining'],
+            datasets: [{
+                data: [value, remaining],
+                backgroundColor: [color, '#4A4A4A'],
+                hoverBackgroundColor: [color, '#4A4A4A'],
+                borderWidth: 0
+            }]
+        };
+
         const chart = new Chart(ctx, {
             type: 'doughnut',
-            data: {
-                datasets: [{
-                    data: [value, remaining],
-                    backgroundColor: [color, '#4A4A4A'],
-                    borderWidth: 0,
-                    circumference: 270,
-                    rotation: 225,
-                }]
-            },
+            data: data,
             options: {
                 responsive: true,
+                maintainAspectRatio: false,
                 cutout: '80%',
-                plugins: { tooltip: { enabled: false }, legend: { display: false } }
+                plugins: {
+                    tooltip: { enabled: false },
+                    legend: { display: false }
+                }
             }
         });
         window.myCharts[ctx.canvas.id] = chart;
     }
+    
+    // Create ring charts for macros
+    createRingChart(document.getElementById('calorieRingChart').getContext('2d'), totals.calories, goals.calorie_goal, '#00C4B8');
+    createRingChart(document.getElementById('caloriesBurntRingChart').getContext('2d'), totals.calories_burnt, goals.calories_burnt_goal, '#F44336');
+    createRingChart(document.getElementById('proteinRingChart').getContext('2d'), totals.protein, goals.protein_goal, '#F44336');
+    createRingChart(document.getElementById('carbsRingChart').getContext('2d'), totals.carbs, goals.carbs_goal, '#2196F3');
+    createRingChart(document.getElementById('fatRingChart').getContext('2d'), totals.fat, goals.fat_goal, '#FFC107');
+    createRingChart(document.getElementById('sugarRingChart').getContext('2d'), totals.sugar, goals.sugar_goal, '#9C27B0');
 
-    createRingChart(document.getElementById('calorieRingChart').getContext('2d'), totals.calories, goals.calorie_goal, '#22c55e');
-    createRingChart(document.getElementById('caloriesBurntRingChart').getContext('2d'), totals.calories_burnt, goals.calories_burnt_goal, '#f97316');
-    createRingChart(document.getElementById('proteinRingChart').getContext('2d'), totals.protein, goals.protein_goal, '#f87171');
-    createRingChart(document.getElementById('carbsRingChart').getContext('2d'), totals.carbs, goals.carbs_goal, '#38bdf8');
-    createRingChart(document.getElementById('fatRingChart').getContext('2d'), totals.fat, goals.fat_goal, '#facc15');
-    createRingChart(document.getElementById('sugarRingChart').getContext('2d'), totals.sugar, goals.sugar_goal, '#a78bfa');
+    document.getElementById('water-progress').style.width = `${goals.water_goal > 0 ? Math.min(100, (totals.water / goals.water_goal * 100)) : 0}%`;
+    document.getElementById('step-progress').style.width = `${goals.step_goal > 0 ? Math.min(100, (totals.steps / goals.step_goal * 100)) : 0}%`;
+    document.getElementById('sleep-progress').style.width = `${goals.sleep_goal > 0 ? Math.min(100, (totals.sleep / goals.sleep_goal * 100)) : 0}%`;
+    
+    // Line chart for Weight Trend
+    new Chart(document.getElementById('weightChart').getContext('2d'), {
+        type: 'line',
+        data: {
+            labels: chartData.weight_labels,
+            datasets: [{
+                label: 'Weight (kg)',
+                data: chartData.weight_values,
+                borderColor: '#00C4B8',
+                backgroundColor: 'rgba(0, 196, 184, 0.2)',
+                tension: 0.4,
+                fill: true,
+                pointBackgroundColor: '#00C4B8',
+                pointBorderColor: '#fff',
+                pointHoverBackgroundColor: '#fff',
+                pointHoverBorderColor: '#00C4B8'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: { grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: '#bbb' } },
+                y: { grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: '#bbb' } }
+            }
+        }
+    });
 
-    document.getElementById('water-progress').style.width = `${goals.water_goal > 0 ? (totals.water / goals.water_goal * 100) : 0}%`;
-    document.getElementById('step-progress').style.width = `${goals.step_goal > 0 ? (totals.steps / goals.step_goal * 100) : 0}%`;
-    document.getElementById('sleep-progress').style.width = `${goals.sleep_goal > 0 ? (totals.sleep / goals.sleep_goal * 100) : 0}%`;
-
-    new Chart(document.getElementById('weightChart').getContext('2d'), { type: 'line', data: { labels: chartData.weight_labels, datasets: [{ label: 'Weight (kg)', data: chartData.weight_values, borderColor: '#22c55e', tension: 0.1 }] } });
-    new Chart(document.getElementById('sleepChart').getContext('2d'), { type: 'bar', data: { labels: chartData.sleep_labels, datasets: [{ label: 'Sleep (hours)', data: chartData.sleep_values, backgroundColor: '#8b5cf6' }] } });
+    // Bar chart for Sleep Trend
+    new Chart(document.getElementById('sleepChart').getContext('2d'), {
+        type: 'bar',
+        data: {
+            labels: chartData.sleep_labels,
+            datasets: [{
+                label: 'Sleep (hours)',
+                data: chartData.sleep_values,
+                backgroundColor: '#9C27B0',
+                borderColor: '#9C27B0',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: { grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: '#bbb' } },
+                y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: '#bbb' } }
+            }
+        }
+    });
 });
 </script>
+{% endblock %}

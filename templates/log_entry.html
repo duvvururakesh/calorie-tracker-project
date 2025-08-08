@@ -1,26 +1,28 @@
-<div class="p-6" x-data="{ tab: '{{ request.args.get('tab', 'food') }}' }">
+{% extends "base.html" %}
+{% block content %}
+<div class="p-6 pb-24" x-data="{ tab: '{{ request.args.get('tab', 'food') }}' }">
     <div class="flex justify-between items-center mb-6 bg-dark p-2 rounded-xl">
-        <a href="{{ url_for('home', selected_date=prev_day.strftime('%Y-%m-%d')) }}" class="p-2 rounded-full hover:bg-gray-700">&lt;</a>
+        <a href="{{ url_for('log_entry', selected_date=prev_day.strftime('%Y-%m-%d'), tab=request.args.get('tab', 'food')) }}" class="p-2 rounded-full hover:bg-gray-700">&lt;</a>
         <h1 class="text-xl font-bold">
             {% if selected_date == date.today() %}Today, {{ selected_date.strftime('%b %d') }}{% else %}{{ selected_date.strftime('%a, %b %d') }}{% endif %}
         </h1>
-        <a href="{{ url_for('home', selected_date=next_day.strftime('%Y-%m-%d')) }}" class="p-2 rounded-full hover:bg-gray-700">&gt;</a>
+        <a href="{{ url_for('log_entry', selected_date=next_day.strftime('%Y-%m-%d'), tab=request.args.get('tab', 'food')) }}" class="p-2 rounded-full hover:bg-gray-700">&gt;</a>
     </div>
 
-    <div class="border-b border-dark mb-4">
-        <nav class="flex space-x-1 sm:space-x-2 -mb-px overflow-x-auto">
-            <button @click="tab = 'food'" :class="{ 'border-green-500 text-green-500': tab === 'food', 'border-transparent text-gray-400': tab !== 'food' }" class="py-2 px-3 border-b-2 font-medium text-sm sm:text-base whitespace-nowrap">Food</button>
-            <button @click="tab = 'water'" :class="{ 'border-green-500 text-green-500': tab === 'water', 'border-transparent text-gray-400': tab !== 'water' }" class="py-2 px-3 border-b-2 font-medium text-sm sm:text-base whitespace-nowrap">Water</button>
-            <button @click="tab = 'weight'" :class="{ 'border-green-500 text-green-500': tab === 'weight', 'border-transparent text-gray-400': tab !== 'weight' }" class="py-2 px-3 border-b-2 font-medium text-sm sm:text-base whitespace-nowrap">Weight</button>
-            <button @click="tab = 'steps'" :class="{ 'border-green-500 text-green-500': tab === 'steps', 'border-transparent text-gray-400': tab !== 'steps' }" class="py-2 px-3 border-b-2 font-medium text-sm sm:text-base whitespace-nowrap">Steps</button>
-            <button @click="tab = 'sleep'" :class="{ 'border-green-500 text-green-500': tab === 'sleep', 'border-transparent text-gray-400': tab !== 'sleep' }" class="py-2 px-3 border-b-2 font-medium text-sm sm:text-base whitespace-nowrap">Sleep</button>
-            <button @click="tab = 'calories_burnt'" :class="{ 'border-green-500 text-green-500': tab === 'calories_burnt', 'border-transparent text-gray-400': tab !== 'calories_burnt' }" class="py-2 px-3 border-b-2 font-medium text-sm sm:text-base whitespace-nowrap">Calories Burnt</button>
+    <div class="border-b border-dark mb-4 overflow-x-auto">
+        <nav class="flex space-x-1 sm:space-x-2 -mb-px">
+            <button @click="tab = 'food'" :class="{ 'border-teal text-teal': tab === 'food', 'border-transparent text-gray-400': tab !== 'food' }" class="py-2 px-3 border-b-2 font-medium text-sm sm:text-base whitespace-nowrap">Food</button>
+            <button @click="tab = 'water'" :class="{ 'border-teal text-teal': tab === 'water', 'border-transparent text-gray-400': tab !== 'water' }" class="py-2 px-3 border-b-2 font-medium text-sm sm:text-base whitespace-nowrap">Water</button>
+            <button @click="tab = 'weight'" :class="{ 'border-teal text-teal': tab === 'weight', 'border-transparent text-gray-400': tab !== 'weight' }" class="py-2 px-3 border-b-2 font-medium text-sm sm:text-base whitespace-nowrap">Weight</button>
+            <button @click="tab = 'steps'" :class="{ 'border-teal text-teal': tab === 'steps', 'border-transparent text-gray-400': tab !== 'steps' }" class="py-2 px-3 border-b-2 font-medium text-sm sm:text-base whitespace-nowrap">Steps</button>
+            <button @click="tab = 'sleep'" :class="{ 'border-teal text-teal': tab === 'sleep', 'border-transparent text-gray-400': tab !== 'sleep' }" class="py-2 px-3 border-b-2 font-medium text-sm sm:text-base whitespace-nowrap">Sleep</button>
+            <button @click="tab = 'calories_burnt'" :class="{ 'border-teal text-teal': tab === 'calories_burnt', 'border-transparent text-gray-400': tab !== 'calories_burnt' }" class="py-2 px-3 border-b-2 font-medium text-sm sm:text-base whitespace-nowrap">Calories Burnt</button>
         </nav>
     </div>
 
     <div>
-        <div x-show="tab === 'food'">
-            <div class="bg-dark p-4 rounded-xl">
+        <div x-show="tab === 'food'" class="space-y-4">
+            <div class="bg-dark p-4 rounded-xl shadow-lg">
                 <h3 class="text-xl font-bold mb-4">Log Food</h3>
                 <form method="POST" class="space-y-4">
                     {{ food_form.hidden_tag() }}
@@ -35,14 +37,14 @@
                         {{ food_form.fat(class="w-full p-3 bg-gray-800 border border-dark rounded-lg", placeholder="Fat (g)") }}
                         {{ food_form.sugar(class="w-full p-3 bg-gray-800 border border-dark rounded-lg", placeholder="Sugar (g)") }}
                     </div>
-                    {{ food_form.submit_food(class="w-full py-3 px-4 rounded-lg text-white font-semibold bg-green-500") }}
+                    {{ food_form.submit_food(class="w-full py-3 px-4 rounded-lg text-white font-semibold bg-teal") }}
                 </form>
             </div>
-            <div class="bg-dark p-4 rounded-xl mt-4">
+            <div class="bg-dark p-4 rounded-xl shadow-lg">
                 <h3 class="text-lg font-bold mb-2">Logged Food</h3>
                 <ul class="space-y-2">
                     {% for entry in entries.food %}
-                    <li class="flex justify-between items-center text-sm">
+                    <li class="flex justify-between items-center text-sm p-2 rounded-lg bg-gray-800">
                         <span>{{ entry.name }} ({{ entry.time.strftime('%H:%M') }}) - {{ entry.calories|int }} kcal</span>
                         <div class="flex items-center space-x-2">
                             <a href="{{ url_for('edit_entry', entry_type='food', entry_id=entry.id) }}" class="text-blue-400 hover:underline">Edit</a>
@@ -58,20 +60,20 @@
             </div>
         </div>
 
-        <div x-show="tab === 'water'">
-            <div class="bg-dark p-4 rounded-xl">
+        <div x-show="tab === 'water'" class="space-y-4">
+            <div class="bg-dark p-4 rounded-xl shadow-lg">
                 <h3 class="text-xl font-bold mb-4">Log Water</h3>
                 <form method="POST" class="space-y-4">
                     {{ water_form.hidden_tag() }}
                     {{ water_form.water_amount(class="w-full p-3 bg-gray-800 border border-dark rounded-lg", placeholder="Amount in ml") }}
-                    {{ water_form.submit_water(class="w-full py-3 px-4 rounded-lg text-white font-semibold bg-green-500") }}
+                    {{ water_form.submit_water(class="w-full py-3 px-4 rounded-lg text-white font-semibold bg-teal") }}
                 </form>
             </div>
-             <div class="bg-dark p-4 rounded-xl mt-4">
+            <div class="bg-dark p-4 rounded-xl shadow-lg">
                 <h3 class="text-lg font-bold mb-2">Logged Water</h3>
                 <ul class="space-y-2">
                     {% for entry in entries.water %}
-                    <li class="flex justify-between items-center text-sm">
+                    <li class="flex justify-between items-center text-sm p-2 rounded-lg bg-gray-800">
                         <span>{{ entry.amount_ml }} ml</span>
                         <div class="flex items-center space-x-2">
                             <a href="{{ url_for('edit_entry', entry_type='water', entry_id=entry.id) }}" class="text-blue-400 hover:underline">Edit</a>
@@ -87,27 +89,27 @@
             </div>
         </div>
 
-        <div x-show="tab === 'weight'">
-            <div class="bg-dark p-4 rounded-xl">
+        <div x-show="tab === 'weight'" class="space-y-4">
+            <div class="bg-dark p-4 rounded-xl shadow-lg">
                 <h3 class="text-xl font-bold mb-4">Log Weight</h3>
                 <form method="POST" class="space-y-4" x-data="{ weightUnit: 'kg' }">
                     {{ weight_form.hidden_tag() }}
                     <div>
                         <div class="flex items-center space-x-2 mb-2">
-                            <button type="button" @click="weightUnit = 'kg'" :class="{'bg-green-500': weightUnit === 'kg', 'bg-gray-700': weightUnit !== 'kg'}" class="px-3 py-1 rounded-lg text-sm">kg</button>
-                            <button type="button" @click="weightUnit = 'lbs'" :class="{'bg-green-500': weightUnit === 'lbs', 'bg-gray-700': weightUnit !== 'lbs'}" class="px-3 py-1 rounded-lg text-sm">lbs</button>
+                            <button type="button" @click="weightUnit = 'kg'" :class="{'bg-teal': weightUnit === 'kg', 'bg-gray-700': weightUnit !== 'kg'}" class="px-3 py-1 rounded-lg text-sm">kg</button>
+                            <button type="button" @click="weightUnit = 'lbs'" :class="{'bg-teal': weightUnit === 'lbs', 'bg-gray-700': weightUnit !== 'lbs'}" class="px-3 py-1 rounded-lg text-sm">lbs</button>
                         </div>
                         <input type="hidden" name="weight_unit" x-model="weightUnit">
                         {{ weight_form.weight_amount(class="w-full p-3 bg-gray-800 border border-dark rounded-lg", placeholder="Weight") }}
                     </div>
-                    {{ weight_form.submit_weight(class="w-full py-3 px-4 rounded-lg text-white font-semibold bg-green-500") }}
+                    {{ weight_form.submit_weight(class="w-full py-3 px-4 rounded-lg text-white font-semibold bg-teal") }}
                 </form>
             </div>
-             <div class="bg-dark p-4 rounded-xl mt-4">
+            <div class="bg-dark p-4 rounded-xl shadow-lg">
                 <h3 class="text-lg font-bold mb-2">Logged Weight</h3>
                 <ul class="space-y-2">
                     {% for entry in entries.weight %}
-                    <li class="flex justify-between items-center text-sm">
+                    <li class="flex justify-between items-center text-sm p-2 rounded-lg bg-gray-800">
                         <span>{{ "%.1f"|format(entry.weight_kg) }} kg</span>
                         <div class="flex items-center space-x-2">
                             <a href="{{ url_for('edit_entry', entry_type='weight', entry_id=entry.id) }}" class="text-blue-400 hover:underline">Edit</a>
@@ -123,20 +125,20 @@
             </div>
         </div>
 
-        <div x-show="tab === 'steps'">
-            <div class="bg-dark p-4 rounded-xl">
+        <div x-show="tab === 'steps'" class="space-y-4">
+            <div class="bg-dark p-4 rounded-xl shadow-lg">
                 <h3 class="text-xl font-bold mb-4">Log Steps</h3>
                 <form method="POST" class="space-y-4">
                     {{ step_form.hidden_tag() }}
                     {{ step_form.step_amount(class="w-full p-3 bg-gray-800 border border-dark rounded-lg", placeholder="Number of steps") }}
-                    {{ step_form.submit_steps(class="w-full py-3 px-4 rounded-lg text-white font-semibold bg-green-500") }}
+                    {{ step_form.submit_steps(class="w-full py-3 px-4 rounded-lg text-white font-semibold bg-teal") }}
                 </form>
             </div>
-             <div class="bg-dark p-4 rounded-xl mt-4">
+            <div class="bg-dark p-4 rounded-xl shadow-lg">
                 <h3 class="text-lg font-bold mb-2">Logged Steps</h3>
                 <ul class="space-y-2">
                     {% for entry in entries.steps %}
-                    <li class="flex justify-between items-center text-sm">
+                    <li class="flex justify-between items-center text-sm p-2 rounded-lg bg-gray-800">
                         <span>{{ entry.steps }} steps</span>
                         <div class="flex items-center space-x-2">
                             <a href="{{ url_for('edit_entry', entry_type='steps', entry_id=entry.id) }}" class="text-blue-400 hover:underline">Edit</a>
@@ -152,8 +154,8 @@
             </div>
         </div>
 
-        <div x-show="tab === 'sleep'">
-            <div class="bg-dark p-4 rounded-xl">
+        <div x-show="tab === 'sleep'" class="space-y-4">
+            <div class="bg-dark p-4 rounded-xl shadow-lg">
                 <h3 class="text-xl font-bold mb-4">Log Sleep</h3>
                 <form method="POST" class="space-y-4">
                     {{ sleep_form.hidden_tag() }}
@@ -167,14 +169,14 @@
                             {{ sleep_form.wake_time(class="w-full p-3 bg-gray-800 border border-dark rounded-lg mt-1") }}
                         </div>
                     </div>
-                    {{ sleep_form.submit_sleep(class="w-full py-3 px-4 rounded-lg text-white font-semibold bg-green-500") }}
+                    {{ sleep_form.submit_sleep(class="w-full py-3 px-4 rounded-lg text-white font-semibold bg-teal") }}
                 </form>
             </div>
-             <div class="bg-dark p-4 rounded-xl mt-4">
+            <div class="bg-dark p-4 rounded-xl shadow-lg">
                 <h3 class="text-lg font-bold mb-2">Logged Sleep</h3>
                 <ul class="space-y-2">
                     {% for entry in entries.sleep %}
-                    <li class="flex justify-between items-center text-sm">
+                    <li class="flex justify-between items-center text-sm p-2 rounded-lg bg-gray-800">
                         <span>{{ "%.1f"|format(entry.duration_hours) }} hours</span>
                         <div class="flex items-center space-x-2">
                             <a href="{{ url_for('edit_entry', entry_type='sleep', entry_id=entry.id) }}" class="text-blue-400 hover:underline">Edit</a>
@@ -190,20 +192,20 @@
             </div>
         </div>
         
-        <div x-show="tab === 'calories_burnt'">
-            <div class="bg-dark p-4 rounded-xl">
+        <div x-show="tab === 'calories_burnt'" class="space-y-4">
+            <div class="bg-dark p-4 rounded-xl shadow-lg">
                 <h3 class="text-xl font-bold mb-4">Log Calories Burnt</h3>
                 <form method="POST" class="space-y-4">
                     {{ calories_burnt_form.hidden_tag() }}
                     {{ calories_burnt_form.calories_burnt(class="w-full p-3 bg-gray-800 border border-dark rounded-lg", placeholder="Calories Burnt") }}
-                    {{ calories_burnt_form.submit_calories_burnt(class="w-full py-3 px-4 rounded-lg text-white font-semibold bg-green-500") }}
+                    {{ calories_burnt_form.submit_calories_burnt(class="w-full py-3 px-4 rounded-lg text-white font-semibold bg-teal") }}
                 </form>
             </div>
-             <div class="bg-dark p-4 rounded-xl mt-4">
+            <div class="bg-dark p-4 rounded-xl shadow-lg">
                 <h3 class="text-lg font-bold mb-2">Logged Calories Burnt</h3>
                 <ul class="space-y-2">
                     {% for entry in entries.calories_burnt %}
-                    <li class="flex justify-between items-center text-sm">
+                    <li class="flex justify-between items-center text-sm p-2 rounded-lg bg-gray-800">
                         <span>{{ entry.calories_burnt }} kcal</span>
                         <div class="flex items-center space-x-2">
                             <a href="{{ url_for('edit_entry', entry_type='calories_burnt', entry_id=entry.id) }}" class="text-blue-400 hover:underline">Edit</a>
@@ -218,6 +220,6 @@
                 </ul>
             </div>
         </div>
-
     </div>
 </div>
+{% endblock %}

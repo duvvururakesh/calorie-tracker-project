@@ -1,22 +1,28 @@
-<div class="p-6" x-data="unitConverter({{ current_user.height_cm or 0 }}, {{ current_user.weight_kg or 0 }})">
-    <div x-data="{ tab: '{{ request.args.get('tab', 'profile') }}' }" class="bg-dark rounded-xl p-6">
+{% extends "base.html" %}
+{% block content %}
+<div class="p-6 pb-24" x-data="unitConverter({{ current_user.height_cm or 0 }}, {{ current_user.weight_kg or 0 }})">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-2xl font-bold">Settings</h1>
+        <a href="{{ url_for('dashboard') }}" class="text-gray-400 hover:text-white">&larr; Back to Dashboard</a>
+    </div>
+
+    <div x-data="{ tab: '{{ request.args.get('tab', 'profile') }}' }" class="bg-dark rounded-xl p-6 shadow-lg">
         <div class="border-b border-dark mb-4">
             <nav class="flex justify-between">
-                <button @click="tab = 'profile'" :class="{ 'border-green-500 text-green-500': tab === 'profile', 'border-transparent text-gray-400': tab !== 'profile' }" class="flex-1 py-2 px-4 border-b-2 font-medium text-center">Profile</button>
-                <button @click="tab = 'account'" :class="{ 'border-green-500 text-green-500': tab === 'account', 'border-transparent text-gray-400': tab !== 'account' }" class="flex-1 py-2 px-4 border-b-2 font-medium text-center">Account</button>
+                <button @click="tab = 'profile'" :class="{ 'border-teal text-teal': tab === 'profile', 'border-transparent text-gray-400': tab !== 'profile' }" class="flex-1 py-2 px-4 border-b-2 font-medium text-center">Profile</button>
+                <button @click="tab = 'account'" :class="{ 'border-teal text-teal': tab === 'account', 'border-transparent text-gray-400': tab !== 'account' }" class="flex-1 py-2 px-4 border-b-2 font-medium text-center">Account</button>
             </nav>
         </div>
 
-        <div x-show="tab === 'profile'"> {# Removed style="display: none;" #}
-            <form action="{{ url_for('home', view='settings', tab='profile') }}" method="POST">
+        <div x-show="tab === 'profile'">
+            <form action="{{ url_for('settings', tab='profile') }}" method="POST">
                 {{ profile_form.hidden_tag() }}
                 <div class="space-y-4">
-                    <!-- Height Input -->
                     <div>
                         <label class="block text-sm font-medium text-gray-400">Height</label>
                         <div class="flex items-center space-x-2 mt-1">
-                            <button type="button" @click="heightUnit = 'cm'" :class="{'bg-green-500': heightUnit === 'cm', 'bg-gray-700': heightUnit !== 'cm'}" class="px-3 py-1 rounded-lg text-sm">cm</button>
-                            <button type="button" @click="heightUnit = 'ft'" :class="{'bg-green-500': heightUnit === 'ft', 'bg-gray-700': heightUnit !== 'ft'}" class="px-3 py-1 rounded-lg text-sm">ft/in</button>
+                            <button type="button" @click="heightUnit = 'cm'" :class="{'bg-teal': heightUnit === 'cm', 'bg-gray-700': heightUnit !== 'cm'}" class="px-3 py-1 rounded-lg text-sm">cm</button>
+                            <button type="button" @click="heightUnit = 'ft'" :class="{'bg-teal': heightUnit === 'ft', 'bg-gray-700': heightUnit !== 'ft'}" class="px-3 py-1 rounded-lg text-sm">ft/in</button>
                         </div>
                         <input type="hidden" name="height_unit" x-model="heightUnit">
                         <div x-show="heightUnit === 'cm'" class="mt-2">
@@ -34,12 +40,11 @@
                             </ul>
                         {% endif %}
                     </div>
-                    <!-- Weight Input -->
                     <div>
                         <label class="block text-sm font-medium text-gray-400">Weight</label>
                         <div class="flex items-center space-x-2 mt-1">
-                            <button type="button" @click="weightUnit = 'kg'" :class="{'bg-green-500': weightUnit === 'kg', 'bg-gray-700': weightUnit !== 'kg'}" class="px-3 py-1 rounded-lg text-sm">kg</button>
-                            <button type="button" @click="weightUnit = 'lbs'" :class="{'bg-green-500': weightUnit === 'lbs', 'bg-gray-700': weightUnit !== 'lbs'}" class="px-3 py-1 rounded-lg text-sm">lbs</button>
+                            <button type="button" @click="weightUnit = 'kg'" :class="{'bg-teal': weightUnit === 'kg', 'bg-gray-700': weightUnit !== 'kg'}" class="px-3 py-1 rounded-lg text-sm">kg</button>
+                            <button type="button" @click="weightUnit = 'lbs'" :class="{'bg-teal': weightUnit === 'lbs', 'bg-gray-700': weightUnit !== 'lbs'}" class="px-3 py-1 rounded-lg text-sm">lbs</button>
                         </div>
                         <input type="hidden" name="weight_unit" x-model="weightUnit">
                         <div class="mt-2">
@@ -87,19 +92,15 @@
                             </ul>
                         {% endif %}
                     </div>
-                    <div class="pt-4">{{ profile_form.submit_profile(class="w-full py-3 px-4 rounded-lg text-white font-semibold bg-green-500") }}</div>
+                    <div class="pt-4">{{ profile_form.submit_profile(class="w-full py-3 px-4 rounded-lg text-white font-semibold bg-teal") }}</div>
                 </div>
             </form>
         </div>
-        
-        <!-- Goals Tab removed from here -->
 
         <div x-show="tab === 'account'" style="display: none;">
-            <form action="{{ url_for('home', view='settings', tab='account') }}" method="POST">
+            <form action="{{ url_for('settings', tab='account') }}" method="POST">
                 {{ account_form.hidden_tag() }}
                 <div class="space-y-4">
-                    <!-- Profile Picture Section removed -->
-
                     <div>
                         {{ account_form.username.label(class="block text-sm font-medium text-gray-400") }}
                         {{ account_form.username(class="mt-1 w-full p-3 bg-gray-800 border border-dark rounded-lg") }}
@@ -183,23 +184,31 @@ function unitConverter(initialHeightCm, initialWeightKg) {
         heightIn: Math.round((initialHeightCm / 2.54) % 12),
         weightKg: initialWeightKg,
         init() {
+            this.heightCm = parseFloat(this.heightCm);
+            this.weightKg = parseFloat(this.weightKg);
+
             this.$watch('heightUnit', (newUnit) => {
                 if (newUnit === 'ft') {
                     const totalInches = this.heightCm / 2.54;
                     this.heightFt = Math.floor(totalInches / 12);
                     this.heightIn = Math.round(totalInches % 12);
-                } else {
-                    this.heightCm = Math.round((this.heightFt * 30.48) + (this.heightIn * 2.54));
                 }
+            });
+            this.$watch('heightFt', (newVal) => {
+                 this.heightCm = (this.heightFt * 30.48) + (this.heightIn * 2.54);
+            });
+            this.$watch('heightIn', (newVal) => {
+                 this.heightCm = (this.heightFt * 30.48) + (this.heightIn * 2.54);
             });
             this.$watch('weightUnit', (newUnit) => {
                 if (newUnit === 'lbs') {
-                    this.weightKg = Math.round((this.weightKg * 2.20462) * 10) / 10;
+                    this.weightKg = this.weightKg * 2.20462;
                 } else {
-                    this.weightKg = Math.round((this.weightKg / 2.20462) * 10) / 10;
+                    this.weightKg = this.weightKg / 2.20462;
                 }
             });
         }
     }
 }
 </script>
+{% endblock %}
