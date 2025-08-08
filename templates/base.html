@@ -21,10 +21,10 @@
         ::-webkit-scrollbar-thumb:hover { background: #555555; }
     </style>
 </head>
-<body class="max-w-lg mx-auto bg-dark">
+<body>
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
-            <div id="flash-container" class="fixed top-5 left-1/2 -translate-x-1/2 w-full max-w-md z-50 px-4">
+            <div id="flash-container" class="fixed top-20 left-1/2 -translate-x-1/2 w-full max-w-md z-50 px-4">
             {% for category, message in messages %}
                 <div class="flash-message p-4 mb-4 text-sm rounded-lg shadow-lg {{ 'bg-green-700 text-white' if category == 'success' else 'bg-red-700 text-white' }}" role="alert">
                     {{ message }}
@@ -33,32 +33,24 @@
             </div>
         {% endif %}
     {% endwith %}
+
+    <header class="bg-dark text-white p-4 shadow-md flex flex-col md:flex-row justify-between items-center md:space-x-4">
+        <div class="flex-1 text-center md:text-left text-xl font-bold mb-2 md:mb-0">Welcome, {{ current_user.profile_name or current_user.username }}</div>
+        <nav class="flex-1">
+            <ul class="flex justify-center md:justify-end space-x-4">
+                <li><a href="{{ url_for('dashboard') }}" class="hover:text-teal {% if title == 'Dashboard' %}text-teal{% endif %}">Dashboard</a></li>
+                <li><a href="{{ url_for('log_entry') }}" class="hover:text-teal {% if title == 'Log' %}text-teal{% endif %}">Log</a></li>
+                <li><a href="{{ url_for('goals') }}" class="hover:text-teal {% if title == 'Goals' %}text-teal{% endif %}">Goals</a></li>
+                <li><a href="{{ url_for('settings') }}" class="hover:text-teal {% if title == 'Settings' %}text-teal{% endif %}">Settings</a></li>
+                <li><a href="{{ url_for('logout') }}" class="text-red-500 hover:text-red-400">Logout</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main class="max-w-lg mx-auto md:max-w-screen-xl">
+        {% block content %}{% endblock %}
+    </main>
     
-    {% block content %}{% endblock %}
-
-    <div class="fixed bottom-0 left-0 right-0 bg-dark p-2 flex justify-around max-w-lg mx-auto border-t border-dark">
-        <a href="{{ url_for('dashboard') }}" class="p-2 text-center flex flex-col items-center" :class="{ 'text-teal': window.location.pathname === '/dashboard' || window.location.pathname === '/', 'text-gray-400': window.location.pathname !== '/dashboard' && window.location.pathname !== '/' }">
-            <svg class="w-6 h-6 mx-auto mb-1" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M4 13h6V3H4v10zm0 8h6v-6H4v6zm10 0h6V11h-6v10zm0-18v6h6V3h-6z"/></svg>
-            <span class="text-xs">Dashboard</span>
-        </a>
-        <a href="{{ url_for('log_entry') }}" class="p-2 text-center flex flex-col items-center" :class="{ 'text-teal': window.location.pathname === '/log', 'text-gray-400': window.location.pathname !== '/log' }">
-            <svg class="w-6 h-6 mx-auto mb-1" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
-            <span class="text-xs">Log</span>
-        </a>
-        <a href="{{ url_for('goals') }}" class="p-2 text-center flex flex-col items-center" :class="{ 'text-teal': window.location.pathname === '/goals', 'text-gray-400': window.location.pathname !== '/goals' }">
-            <svg class="w-6 h-6 mx-auto mb-1" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2c-5.52 0-10 4.48-10 10s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-11h2v6h-2v-6zm2-2h-2v2h2V7z"/></svg>
-            <span class="text-xs">Goals</span>
-        </a>
-        <a href="{{ url_for('settings') }}" class="p-2 text-center flex flex-col items-center" :class="{ 'text-teal': window.location.pathname === '/settings', 'text-gray-400': window.location.pathname !== '/settings' }">
-            <svg class="w-6 h-6 mx-auto mb-1" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.39-1.09-.72-1.71-.96l-.37-2.65c-.06-.24-.28-.42-.5-.42h-4c-.22 0-.44.18-.5.42l-.37 2.65c-.62.24-1.19.57-1.71.96l-2.49-1c-.22-.08-.49 0-.61.22l-2 3.46c-.12.22-.07.49.12.64l2.11 1.65c-.04.32-.07.64-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.39 1.09.72 1.71.96l.37 2.65c.06.24.28.42.5.42h4c.22 0 .44-.18.5-.42l.37-2.65c.62-.24 1.19-.57 1.71-.96l2.49 1c.22.08.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z"/></svg>
-            <span class="text-xs">Settings</span>
-        </a>
-        <a href="{{ url_for('logout') }}" class="p-2 text-center text-red-500 flex flex-col items-center">
-            <svg class="w-6 h-6 mx-auto mb-1" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M13 3h-2v10h2V3zm4.84 2.84l-1.41 1.41c2.44 2.37 2.76 6.27.8 8.94L16.2 18.2c2.47-3.07 2.1-7.55-1.07-10.02zM7.57 7.25l-1.41-1.41c-2.47 2.47-2.84 6.95 0 10.02l1.41-1.41c-2.44-2.37-2.76-6.27-.8-8.94z"/></svg>
-            <span class="text-xs">Logout</span>
-        </a>
-    </div>
-
     <script src="//unpkg.com/alpinejs" defer></script>
     <script>
     document.addEventListener('DOMContentLoaded', function() {

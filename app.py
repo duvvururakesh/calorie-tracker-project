@@ -45,7 +45,7 @@ class User(UserMixin, db.Model):
     calories_burnt_goal = db.Column(db.Integer, default=300)
 
     def set_password(self, password):
-        self.password_hash = generate_password_hash(password, method='pbkdf2:sha256')
+        self.password_hash = generate_password_hash(password, method='pbk2:sha256')
 
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
@@ -237,6 +237,11 @@ def get_user_goals(user):
         'calories_burnt_goal': user.calories_burnt_goal or 0
     }
 
+def get_week_dates(selected_date):
+    # Find the first day of the week (Sunday)
+    start_of_week = selected_date - timedelta(days=(selected_date.weekday() + 1) % 7)
+    return [start_of_week + timedelta(days=i) for i in range(7)]
+
 # --- Context Processor ---
 @app.context_processor
 def inject_date():
@@ -259,7 +264,6 @@ def dashboard():
     goals = get_user_goals(current_user)
     health_metrics = get_health_metrics(current_user, totals)
     
-    # Calculate weight in lbs for the toggle feature
     current_weight_kg = current_user.weight_kg
     current_weight_lbs = current_weight_kg * 2.20462 if current_weight_kg else None
     formatted_weight = {
@@ -267,33 +271,34 @@ def dashboard():
         'lbs': f"{current_weight_lbs:.2f}" if current_weight_lbs is not None else 'N/A'
     }
 
+    weekly_dates = get_week_dates(selected_date)
+    
+    # Calculate the start dates for the previous and next weeks
+    prev_week_start = weekly_dates[0] - timedelta(days=7)
+    next_week_start = weekly_dates[0] + timedelta(days=7)
+    
     # Chart data for the last 7 days
-    start_of_week = selected_date - timedelta(days=6)
+    start_of_week = weekly_dates[0]
     weight_data = WeightEntry.query.filter(WeightEntry.user_id == current_user.id, WeightEntry.date >= start_of_week, WeightEntry.date <= selected_date).order_by(WeightEntry.date).all()
     sleep_chart_data = SleepEntry.query.filter(SleepEntry.user_id == current_user.id, SleepEntry.date >= start_of_week, SleepEntry.date <= selected_date).order_by(SleepEntry.date).all()
 
-    # Aggregate sleep data by date
     sleep_by_date = {s.date: s for s in sleep_chart_data}
     
-    date_range = [start_of_week + timedelta(days=i) for i in range(7)]
-    
     chart_data = {
-        'weight_labels': [d.strftime('%a') for d in date_range],
-        'weight_values': [next((w.weight_kg for w in weight_data if w.date == d), None) for d in date_range],
-        'sleep_labels': [d.strftime('%a') for d in date_range],
-        'sleep_values': [sleep_by_date[d].duration_hours if d in sleep_by_date else None for d in date_range],
+        'weight_labels': [d.strftime('%a') for d in weekly_dates],
+        'weight_values': [next((w.weight_kg for w in weight_data if w.date == d), None) for d in weekly_dates],
+        'sleep_labels': [d.strftime('%a') for d in weekly_dates],
+        'sleep_values': [sleep_by_date[d].duration_hours if d in sleep_by_date else None for d in weekly_dates],
     }
-
-    prev_day = selected_date - timedelta(days=1)
-    next_day = selected_date + timedelta(days=1)
     
     first_name = current_user.profile_name.split(' ')[0] if current_user.profile_name else current_user.username
     
     return render_template('dashboard.html', title='Dashboard',
                            totals=totals, goals=goals, health_metrics=health_metrics,
                            chart_data=chart_data, first_name=first_name,
-                           selected_date=selected_date, prev_day=prev_day, next_day=next_day,
-                           formatted_weight=formatted_weight)
+                           selected_date=selected_date, weekly_dates=weekly_dates,
+                           formatted_weight=formatted_weight,
+                           prev_week_start=prev_week_start, next_week_start=next_week_start)
 
 @app.route('/log', methods=['GET', 'POST'])
 @login_required
@@ -362,7 +367,6 @@ def log_entry():
             flash('Calories burnt entry added!', 'success')
             return redirect(url_for('log_entry', selected_date=selected_date_str, tab='calories_burnt'))
 
-
     entries = {
         'food': FoodEntry.query.filter_by(user_id=current_user.id, date=selected_date).order_by(FoodEntry.time).all(),
         'water': WaterEntry.query.filter_by(user_id=current_user.id, date=selected_date).all(),
@@ -372,15 +376,20 @@ def log_entry():
         'calories_burnt': CaloriesBurntEntry.query.filter_by(user_id=current_user.id, date=selected_date).all()
     }
     
-    # Calculate previous and next day here in the backend
-    prev_day = selected_date - timedelta(days=1)
-    next_day = selected_date + timedelta(days=1)
+    weekly_dates = get_week_dates(selected_date)
 
+    # Calculate the start dates for the previous and next weeks
+    prev_week_start = weekly_dates[0] - timedelta(days=7)
+    next_week_start = weekly_dates[0] + timedelta(days=7)
+    first_name = current_user.profile_name.split(' ')[0] if current_user.profile_name else current_user.username
+    
     return render_template('log_entry.html', title='Log', selected_date=selected_date,
-                           prev_day=prev_day, next_day=next_day,  # Pass the new variables
+                           weekly_dates=weekly_dates,
                            food_form=food_form, water_form=water_form, weight_form=weight_form,
                            step_form=step_form, sleep_form=sleep_form, calories_burnt_form=calories_burnt_form,
-                           entries=entries)
+                           entries=entries,
+                           prev_week_start=prev_week_start, next_week_start=next_week_start,
+                           first_name=first_name)
 
 @app.route('/goals', methods=['GET', 'POST'])
 @login_required
@@ -399,7 +408,20 @@ def goals():
         db.session.commit()
         flash('Goal settings updated.', 'success')
         return redirect(url_for('goals'))
-    return render_template('goals.html', title='Goals', goals_form=goals_form)
+    
+    selected_date_str = request.args.get('selected_date', date.today().strftime("%Y-%m-%d"))
+    selected_date = datetime.strptime(selected_date_str, "%Y-%m-%d").date()
+    weekly_dates = get_week_dates(selected_date)
+
+    # Calculate the start dates for the previous and next weeks
+    prev_week_start = weekly_dates[0] - timedelta(days=7)
+    next_week_start = weekly_dates[0] + timedelta(days=7)
+    first_name = current_user.profile_name.split(' ')[0] if current_user.profile_name else current_user.username
+
+    return render_template('goals.html', title='Goals', goals_form=goals_form, 
+                           selected_date=selected_date, weekly_dates=weekly_dates,
+                           prev_week_start=prev_week_start, next_week_start=next_week_start,
+                           first_name=first_name)
 
 
 @app.route('/settings', methods=['GET', 'POST'])
@@ -463,8 +485,14 @@ def settings():
             db.session.commit()
             flash('Account settings updated.', 'success')
         return redirect(url_for('settings', tab='account'))
+
+    selected_date_str = request.args.get('selected_date', date.today().strftime("%Y-%m-%d"))
+    selected_date = datetime.strptime(selected_date_str, "%Y-%m-%d").date()
+    weekly_dates = get_week_dates(selected_date)
+    first_name = current_user.profile_name.split(' ')[0] if current_user.profile_name else current_user.username
         
-    return render_template('settings.html', title='Settings', profile_form=profile_form, account_form=account_form)
+    return render_template('settings.html', title='Settings', profile_form=profile_form, account_form=account_form,
+                           selected_date=selected_date, weekly_dates=weekly_dates)
 
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
@@ -474,7 +502,7 @@ def signup():
         new_user = User(
             username=form.username.data, 
             email=form.email.data,
-            profile_name=form.username.data # Default profile name to username
+            profile_name=form.username.data
         )
         new_user.set_password(form.password.data)
         db.session.add(new_user)
