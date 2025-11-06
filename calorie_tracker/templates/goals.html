@@ -3,7 +3,7 @@
 <div class="p-6 pb-24 mx-auto max-w-screen-xl">
     <div class="p-6 bg-dark rounded-xl shadow-lg">
         <h2 class="text-2xl font-bold mb-4 text-center">Goals</h2>
-        <form action="{{ url_for('goals') }}" method="POST">
+        <form action="{{ url_for('profile.goals') }}" method="POST">
             {{ goals_form.hidden_tag() }}
             <div class="space-y-4">
                 <div>

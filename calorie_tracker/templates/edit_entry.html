@@ -2,7 +2,7 @@
 {% block content %}
 <div class="p-6">
     <div class="flex items-center mb-6">
-        <a href="{{ url_for('log_entry', selected_date_str=selected_date.strftime('%Y-%m-%d'), tab=entry_type) }}" class="mr-4 text-green-400">&larr; Back</a>
+        <a href="{{ url_for('log.log_entry', selected_date_str=selected_date.strftime('%Y-%m-%d'), tab=entry_type) }}" class="mr-4 text-green-400">&larr; Back</a>
         <h1 class="text-2xl font-bold">Edit {{ entry_type.capitalize() }} Entry</h1>
     </div>
 

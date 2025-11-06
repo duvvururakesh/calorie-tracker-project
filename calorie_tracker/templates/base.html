@@ -38,11 +38,11 @@
         <div class="flex-1 text-center md:text-left text-xl font-bold mb-2 md:mb-0">Welcome, {{ current_user.profile_name or current_user.username }}</div>
         <nav class="flex-1">
             <ul class="flex justify-center md:justify-end space-x-4">
-                <li><a href="{{ url_for('dashboard') }}" class="hover:text-teal {% if title == 'Dashboard' %}text-teal{% endif %}">Dashboard</a></li>
-                <li><a href="{{ url_for('log_entry') }}" class="hover:text-teal {% if title == 'Log' %}text-teal{% endif %}">Log</a></li>
-                <li><a href="{{ url_for('goals') }}" class="hover:text-teal {% if title == 'Goals' %}text-teal{% endif %}">Goals</a></li>
-                <li><a href="{{ url_for('settings') }}" class="hover:text-teal {% if title == 'Settings' %}text-teal{% endif %}">Settings</a></li>
-                <li><a href="{{ url_for('logout') }}" class="text-red-500 hover:text-red-400">Logout</a></li>
+                <li><a href="{{ url_for('main.dashboard') }}" class="hover:text-teal {% if title == 'Dashboard' %}text-teal{% endif %}">Dashboard</a></li>
+                <li><a href="{{ url_for('log.log_entry') }}" class="hover:text-teal {% if title == 'Log' %}text-teal{% endif %}">Log</a></li>
+                <li><a href="{{ url_for('profile.goals') }}" class="hover:text-teal {% if title == 'Goals' %}text-teal{% endif %}">Goals</a></li>
+                <li><a href="{{ url_for('profile.settings') }}" class="hover:text-teal {% if title == 'Settings' %}text-teal{% endif %}">Settings</a></li>
+                <li><a href="{{ url_for('auth.logout') }}" class="text-red-500 hover:text-red-400">Logout</a></li>
             </ul>
         </nav>
     </header>

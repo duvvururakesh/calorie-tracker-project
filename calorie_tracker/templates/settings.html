@@ -3,7 +3,7 @@
 <div class="p-6 pb-24" x-data="unitConverter({{ current_user.height_cm or 0 }}, {{ current_user.weight_kg or 0 }})">
     <div class="flex justify-between items-center mb-6">
         <h1 class="text-2xl font-bold">Settings</h1>
-        <a href="{{ url_for('dashboard') }}" class="text-gray-400 hover:text-white">&larr; Back to Dashboard</a>
+        <a href="{{ url_for('main.dashboard') }}" class="text-gray-400 hover:text-white">&larr; Back to Dashboard</a>
     </div>
 
     <div x-data="{ tab: '{{ request.args.get('tab', 'profile') }}' }" class="bg-dark rounded-xl p-6 shadow-lg">
@@ -15,7 +15,7 @@
         </div>
 
         <div x-show="tab === 'profile'">
-            <form action="{{ url_for('settings', tab='profile') }}" method="POST">
+            <form action="{{ url_for('profile.settings', tab='profile') }}" method="POST">
                 {{ profile_form.hidden_tag() }}
                 <div class="space-y-4">
                     <div>
@@ -98,7 +98,7 @@
         </div>
 
         <div x-show="tab === 'account'" style="display: none;">
-            <form action="{{ url_for('settings', tab='account') }}" method="POST">
+            <form action="{{ url_for('profile.settings', tab='account') }}" method="POST">
                 {{ account_form.hidden_tag() }}
                 <div class="space-y-4">
                     <div>

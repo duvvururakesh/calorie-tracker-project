@@ -7,13 +7,13 @@
         </div>
 
         <div x-show="view === 'log'" style="display: none;">
-            {% include 'log_entry.html' %}
+            {% include 'log.log_entry.html' %}
         </div>
 
         <div x-show="view === 'goals'" style="display: none;">
             <div class="p-6 bg-dark rounded-xl">
                 <h2 class="text-xl font-bold mb-4 text-center">Goals</h2>
-                <form action="{{ url_for('settings') }}" method="POST">
+                <form action="{{ url_for('profile.settings') }}" method="POST">
                     {{ goals_form.hidden_tag() }}
                     <div class="space-y-4">
                         <div>

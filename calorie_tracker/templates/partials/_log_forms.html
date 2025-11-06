@@ -1,0 +1,92 @@
+<!-- This partial holds all the log forms for each entry type -->
+<div x-show="tab === 'food'" class="space-y-4">
+    <div class="bg-dark p-4 rounded-xl shadow-lg">
+        <h3 class="text-xl font-bold mb-4">Log Food</h3>
+        <form method="POST" class="space-y-4">
+            {{ food_form.hidden_tag() }}
+            {{ food_form.food_name(class="w-full p-3 bg-gray-800 border border-dark rounded-lg", placeholder="Food Name") }}
+            {{ food_form.food_time(class="w-full p-3 bg-gray-800 border border-dark rounded-lg") }}
+            {{ food_form.calories(class="w-full p-3 bg-gray-800 border border-dark rounded-lg", placeholder="Calories") }}
+            <div class="grid grid-cols-2 gap-4">
+                {{ food_form.protein(class="w-full p-3 bg-gray-800 border border-dark rounded-lg", placeholder="Protein (g)") }}
+                {{ food_form.carbs(class="w-full p-3 bg-gray-800 border border-dark rounded-lg", placeholder="Carbs (g)") }}
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                {{ food_form.fat(class="w-full p-3 bg-gray-800 border border-dark rounded-lg", placeholder="Fat (g)") }}
+                {{ food_form.sugar(class="w-full p-3 bg-gray-800 border border-dark rounded-lg", placeholder="Sugar (g)") }}
+            </div>
+            {{ food_form.submit_food(class="w-full py-3 px-4 rounded-lg text-white font-semibold bg-teal") }}
+        </form>
+    </div>
+</div>
+
+<div x-show="tab === 'water'" style="display: none;" class="space-y-4">
+    <div class="bg-dark p-4 rounded-xl shadow-lg">
+        <h3 class="text-xl font-bold mb-4">Log Water</h3>
+        <form method="POST" class="space-y-4">
+            {{ water_form.hidden_tag() }}
+            {{ water_form.water_amount(class="w-full p-3 bg-gray-800 border border-dark rounded-lg", placeholder="Amount in ml") }}
+            {{ water_form.submit_water(class="w-full py-3 px-4 rounded-lg text-white font-semibold bg-teal") }}
+        </form>
+    </div>
+</div>
+
+<div x-show="tab === 'weight'" style="display: none;" class="space-y-4">
+    <div class="bg-dark p-4 rounded-xl shadow-lg">
+        <h3 class="text-xl font-bold mb-4">Log Weight</h3>
+        <form method="POST" class="space-y-4" x-data="{ weightUnit: 'kg' }">
+            {{ weight_form.hidden_tag() }}
+            <div>
+                <div class="flex items-center space-x-2 mb-2">
+                    <button type="button" @click="weightUnit = 'kg'" :class="{'bg-teal': weightUnit === 'kg', 'bg-gray-700': weightUnit !== 'kg'}" class="px-3 py-1 rounded-lg text-sm">kg</button>
+                    <button type="button" @click="weightUnit = 'lbs'" :class="{'bg-teal': weightUnit === 'lbs', 'bg-gray-700': weightUnit !== 'lbs'}" class="px-3 py-1 rounded-lg text-sm">lbs</button>
+                </div>
+                <input type="hidden" name="weight_unit" x-model="weightUnit">
+                {{ weight_form.weight_amount(class="w-full p-3 bg-gray-800 border border-dark rounded-lg", placeholder="Weight") }}
+            </div>
+            {{ weight_form.submit_weight(class="w-full py-3 px-4 rounded-lg text-white font-semibold bg-teal") }}
+        </form>
+    </div>
+</div>
+
+<div x-show="tab === 'steps'" style="display: none;" class="space-y-4">
+    <div class="bg-dark p-4 rounded-xl shadow-lg">
+        <h3 class="text-xl font-bold mb-4">Log Steps</h3>
+        <form method="POST" class="space-y-4">
+            {{ step_form.hidden_tag() }}
+            {{ step_form.step_amount(class="w-full p-3 bg-gray-800 border border-dark rounded-lg", placeholder="Number of steps") }}
+            {{ step_form.submit_steps(class="w-full py-3 px-4 rounded-lg text-white font-semibold bg-teal") }}
+        </form>
+    </div>
+</div>
+
+<div x-show="tab === 'sleep'" style="display: none;" class="space-y-4">
+    <div class="bg-dark p-4 rounded-xl shadow-lg">
+        <h3 class="text-xl font-bold mb-4">Log Sleep</h3>
+        <form method="POST" class="space-y-4">
+            {{ sleep_form.hidden_tag() }}
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label for="sleep_time" class="block text-sm font-medium text-gray-400">Sleep Time</label>
+                    {{ sleep_form.sleep_time(class="w-full p-3 bg-gray-800 border border-dark rounded-lg mt-1") }}
+                </div>
+                <div>
+                    <label for="wake_time" class="block text-sm font-medium text-gray-400">Wake Time</label>
+                    {{ sleep_form.wake_time(class="w-full p-3 bg-gray-800 border border-dark rounded-lg mt-1") }}
+                </div>
+            </div>
+            {{ sleep_form.submit_sleep(class="w-full py-3 px-4 rounded-lg text-white font-semibold bg-teal") }}
+        </form>
+    </div>
+</div>
+
+<div x-show="tab === 'calories_burnt'" style="display: none;" class="space-y-4">
+    <div class="bg-dark p-4 rounded-xl shadow-lg">
+        <h3 class="text-xl font-bold mb-4">Log Calories Burnt</h3>
+        <form method="POST" class="space-y-4">
+            {{ calories_burnt_form.hidden_tag() }}
+            {{ calories_burnt_form.calories_burnt(class="w-full p-3 bg-gray-800 border border-dark rounded-lg", placeholder="Calories Burnt") }}
+            {{ calories_burnt_form.submit_calories_burnt(class="w-full py-3 px-4 rounded-lg text-white font-semibold bg-teal") }}
+        </form>
+    </div>
+</div>

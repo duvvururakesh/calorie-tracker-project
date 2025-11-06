@@ -3,18 +3,18 @@
 <div class="p-6 pb-24 mx-auto max-w-screen-xl" x-data="{showBMIStatus: false, showLbs: false}">
   
     <div class="flex justify-between items-center mb-6 bg-dark p-2 rounded-xl">
-        <a href="{{ url_for('dashboard', selected_date=prev_week_start.strftime('%Y-%m-%d')) }}" class="p-2 rounded-full hover:bg-gray-700">&lt;</a>
+        <a href="{{ url_for('main.dashboard', selected_date=prev_week_start.strftime('%Y-%m-%d')) }}" class="p-2 rounded-full hover:bg-gray-700">&lt;</a>
         <div class="flex-1 flex justify-between items-center overflow-x-auto mx-2 md:mx-0 md:justify-center">
             {% for day in weekly_dates %}
             {% set is_today = day == date.today() %}
             {% set display_day = 'Today' if is_today else day.strftime('%-d') %}
-            <a href="{{ url_for('dashboard', selected_date=day.strftime('%Y-%m-%d')) }}" class="flex-1 text-center p-2 mx-1 rounded-full {{ 'bg-teal' if day == selected_date else 'hover:bg-gray-700' }}">
+            <a href="{{ url_for('main.dashboard', selected_date=day.strftime('%Y-%m-%d')) }}" class="flex-1 text-center p-2 mx-1 rounded-full {{ 'bg-teal' if day == selected_date else 'hover:bg-gray-700' }}">
                 <span class="text-sm font-bold block">{{ day.strftime('%a') }}</span>
                 <span class="text-xs">{{ display_day }}</span>
             </a>
             {% endfor %}
         </div>
-        <a href="{{ url_for('dashboard', selected_date=next_week_start.strftime('%Y-%m-%d')) }}" class="p-2 rounded-full hover:bg-gray-700">&gt;</a>
+        <a href="{{ url_for('main.dashboard', selected_date=next_week_start.strftime('%Y-%m-%d')) }}" class="p-2 rounded-full hover:bg-gray-700">&gt;</a>
     </div>
     
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
