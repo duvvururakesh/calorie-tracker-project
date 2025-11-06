@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="p-6">
+    <div class="flex items-center mb-6">
+        <a href="{{ url_for('log_entry', selected_date_str=selected_date.strftime('%Y-%m-%d'), tab=entry_type) }}" class="mr-4 text-green-400">&larr; Back</a>
+        <h1 class="text-2xl font-bold">Edit {{ entry_type.capitalize() }} Entry</h1>
+    </div>
+
+    <div class="bg-dark p-4 rounded-xl">
+        <form method="POST" class="space-y-4">
+            {{ form.hidden_tag() }}
+
+            {% if entry_type == 'food' %}
+                {{ form.food_name(class="w-full p-3 bg-gray-800 border border-dark rounded-lg", placeholder="Food Name") }}
+                {{ form.food_time(class="w-full p-3 bg-gray-800 border border-dark rounded-lg") }}
+                {{ form.calories(class="w-full p-3 bg-gray-800 border border-dark rounded-lg", placeholder="Calories") }}
+                <div class="grid grid-cols-2 gap-4">
+                    {{ form.protein(class="w-full p-3 bg-gray-800 border border-dark rounded-lg", placeholder="Protein (g)") }}
+                    {{ form.carbs(class="w-full p-3 bg-gray-800 border border-dark rounded-lg", placeholder="Carbs (g)") }}
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    {{ form.fat(class="w-full p-3 bg-gray-800 border border-dark rounded-lg", placeholder="Fat (g)") }}
+                    {{ form.sugar(class="w-full p-3 bg-gray-800 border border-dark rounded-lg", placeholder="Sugar (g)") }}
+                </div>
+                <input type="submit" class="w-full py-3 px-4 rounded-lg text-white font-semibold bg-green-500" value="Update Food">
+            {% elif entry_type == 'water' %}
+                {{ form.water_amount(class="w-full p-3 bg-gray-800 border border-dark rounded-lg", placeholder="Amount in ml") }}
+                <input type="submit" class="w-full py-3 px-4 rounded-lg text-white font-semibold bg-green-500" value="Update Water">
+            {% elif entry_type == 'weight' %}
+                {{ form.weight_amount(class="w-full p-3 bg-gray-800 border border-dark rounded-lg", placeholder="Weight in kg") }}
+                <input type="submit" class="w-full py-3 px-4 rounded-lg text-white font-semibold bg-green-500" value="Update Weight">
+            {% elif entry_type == 'steps' %}
+                {{ form.step_amount(class="w-full p-3 bg-gray-800 border border-dark rounded-lg", placeholder="Number of steps") }}
+                <input type="submit" class="w-full py-3 px-4 rounded-lg text-white font-semibold bg-green-500" value="Update Steps">
+            {% elif entry_type == 'sleep' %}
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label for="sleep_time" class="block text-sm font-medium text-gray-400">Sleep Time</label>
+                        {{ form.sleep_time(class="w-full p-3 bg-gray-800 border border-dark rounded-lg mt-1") }}
+                    </div>
+                    <div>
+                        <label for="wake_time" class="block text-sm font-medium text-gray-400">Wake Time</label>
+                        {{ form.wake_time(class="w-full p-3 bg-gray-800 border border-dark rounded-lg mt-1") }}
+                    </div>
+                </div>
+                <input type="submit" class="w-full py-3 px-4 rounded-lg text-white font-semibold bg-green-500" value="Update Sleep">
+            {% elif entry_type == 'calories_burnt' %}
+                {{ form.calories_burnt(class="w-full p-3 bg-gray-800 border border-dark rounded-lg", placeholder="Calories Burnt") }}
+                <input type="submit" class="w-full py-3 px-4 rounded-lg text-white font-semibold bg-green-500" value="Update Calories Burnt">
+            {% endif %}
+        </form>
+    </div>
+</div>
+{% endblock %}

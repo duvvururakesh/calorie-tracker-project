@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="p-6 pb-24 mx-auto max-w-screen-xl">
+    <div class="p-6 bg-dark rounded-xl shadow-lg">
+        <h2 class="text-2xl font-bold mb-4 text-center">Goals</h2>
+        <form action="{{ url_for('goals') }}" method="POST">
+            {{ goals_form.hidden_tag() }}
+            <div class="space-y-4">
+                <div>
+                    {{ goals_form.calorie_goal.label(class="block text-sm font-medium text-gray-400") }}
+                    {{ goals_form.calorie_goal(class="mt-1 w-full p-3 bg-gray-800 border border-dark rounded-lg") }}
+                    {% if goals_form.calorie_goal.errors %}
+                        <ul class="text-red-500 text-xs mt-1">
+                            {% for error in goals_form.calorie_goal.errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+                </div>
+                <div>
+                    {{ goals_form.calories_burnt_goal.label(class="block text-sm font-medium text-gray-400") }}
+                    {{ goals_form.calories_burnt_goal(class="mt-1 w-full p-3 bg-gray-800 border border-dark rounded-lg") }}
+                    {% if goals_form.calories_burnt_goal.errors %}
+                        <ul class="text-red-500 text-xs mt-1">
+                            {% for error in goals_form.calories_burnt_goal.errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+                </div>
+                <div>
+                    {{ goals_form.protein_goal.label(class="block text-sm font-medium text-gray-400") }}
+                    {{ goals_form.protein_goal(class="mt-1 w-full p-3 bg-gray-800 border border-dark rounded-lg") }}
+                    {% if goals_form.protein_goal.errors %}
+                        <ul class="text-red-500 text-xs mt-1">
+                            {% for error in goals_form.protein_goal.errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+                </div>
+                <div>
+                    {{ goals_form.carbs_goal.label(class="block text-sm font-medium text-gray-400") }}
+                    {{ goals_form.carbs_goal(class="mt-1 w-full p-3 bg-gray-800 border border-dark rounded-lg") }}
+                    {% if goals_form.carbs_goal.errors %}
+                        <ul class="text-red-500 text-xs mt-1">
+                            {% for error in goals_form.carbs_goal.errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+                </div>
+                <div>
+                    {{ goals_form.fat_goal.label(class="block text-sm font-medium text-gray-400") }}
+                    {{ goals_form.fat_goal(class="mt-1 w-full p-3 bg-gray-800 border border-dark rounded-lg") }}
+                    {% if goals_form.fat_goal.errors %}
+                        <ul class="text-red-500 text-xs mt-1">
+                            {% for error in goals_form.fat_goal.errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+                </div>
+                <div>
+                    {{ goals_form.sugar_goal.label(class="block text-sm font-medium text-gray-400") }}
+                    {{ goals_form.sugar_goal(class="mt-1 w-full p-3 bg-gray-800 border border-dark rounded-lg") }}
+                    {% if goals_form.sugar_goal.errors %}
+                        <ul class="text-red-500 text-xs mt-1">
+                            {% for error in goals_form.sugar_goal.errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+                </div>
+                <div>
+                    {{ goals_form.water_goal.label(class="block text-sm font-medium text-gray-400") }}
+                    {{ goals_form.water_goal(class="mt-1 w-full p-3 bg-gray-800 border border-dark rounded-lg") }}
+                    {% if goals_form.water_goal.errors %}
+                        <ul class="text-red-500 text-xs mt-1">
+                            {% for error in goals_form.water_goal.errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+                </div>
+                <div>
+                    {{ goals_form.step_goal.label(class="block text-sm font-medium text-gray-400") }}
+                    {{ goals_form.step_goal(class="mt-1 w-full p-3 bg-gray-800 border border-dark rounded-lg") }}
+                    {% if goals_form.step_goal.errors %}
+                        <ul class="text-red-500 text-xs mt-1">
+                            {% for error in goals_form.step_goal.errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+                </div>
+                <div>
+                    {{ goals_form.sleep_goal.label(class="block text-sm font-medium text-gray-400") }}
+                    {{ goals_form.sleep_goal(class="mt-1 w-full p-3 bg-gray-800 border border-dark rounded-lg") }}
+                    {% if goals_form.sleep_goal.errors %}
+                        <ul class="text-red-500 text-xs mt-1">
+                            {% for error in goals_form.sleep_goal.errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+                </div>
+                <div class="pt-4">{{ goals_form.submit_goals(class="w-full py-3 px-4 rounded-lg text-white font-semibold bg-teal") }}</div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

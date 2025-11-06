@@ -1,0 +1,214 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="p-6 pb-24" x-data="unitConverter({{ current_user.height_cm or 0 }}, {{ current_user.weight_kg or 0 }})">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-2xl font-bold">Settings</h1>
+        <a href="{{ url_for('dashboard') }}" class="text-gray-400 hover:text-white">&larr; Back to Dashboard</a>
+    </div>
+
+    <div x-data="{ tab: '{{ request.args.get('tab', 'profile') }}' }" class="bg-dark rounded-xl p-6 shadow-lg">
+        <div class="border-b border-dark mb-4">
+            <nav class="flex justify-between">
+                <button @click="tab = 'profile'" :class="{ 'border-teal text-teal': tab === 'profile', 'border-transparent text-gray-400': tab !== 'profile' }" class="flex-1 py-2 px-4 border-b-2 font-medium text-center">Profile</button>
+                <button @click="tab = 'account'" :class="{ 'border-teal text-teal': tab === 'account', 'border-transparent text-gray-400': tab !== 'account' }" class="flex-1 py-2 px-4 border-b-2 font-medium text-center">Account</button>
+            </nav>
+        </div>
+
+        <div x-show="tab === 'profile'">
+            <form action="{{ url_for('settings', tab='profile') }}" method="POST">
+                {{ profile_form.hidden_tag() }}
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-400">Height</label>
+                        <div class="flex items-center space-x-2 mt-1">
+                            <button type="button" @click="heightUnit = 'cm'" :class="{'bg-teal': heightUnit === 'cm', 'bg-gray-700': heightUnit !== 'cm'}" class="px-3 py-1 rounded-lg text-sm">cm</button>
+                            <button type="button" @click="heightUnit = 'ft'" :class="{'bg-teal': heightUnit === 'ft', 'bg-gray-700': heightUnit !== 'ft'}" class="px-3 py-1 rounded-lg text-sm">ft/in</button>
+                        </div>
+                        <input type="hidden" name="height_unit" x-model="heightUnit">
+                        <div x-show="heightUnit === 'cm'" class="mt-2">
+                            <input id="{{ profile_form.height_cm.id }}" name="{{ profile_form.height_cm.name }}" type="text" class="w-full p-3 bg-gray-800 border border-dark rounded-lg" x-model="heightCm">
+                        </div>
+                        <div x-show="heightUnit === 'ft'" class="mt-2 flex space-x-2">
+                            <input id="{{ profile_form.height_ft.id }}" name="{{ profile_form.height_ft.name }}" type="text" class="w-1/2 p-3 bg-gray-800 border border-dark rounded-lg" placeholder="ft" x-model="heightFt">
+                            <input id="{{ profile_form.height_in.id }}" name="{{ profile_form.height_in.name }}" type="text" class="w-1/2 p-3 bg-gray-800 border border-dark rounded-lg" placeholder="in" x-model="heightIn">
+                        </div>
+                        {% if profile_form.height_cm.errors or profile_form.height_ft.errors or profile_form.height_in.errors %}
+                            <ul class="text-red-500 text-xs mt-1">
+                                {% for error in profile_form.height_cm.errors %}{% if error %}<li>{{ error }}</li>{% endif %}{% endfor %}
+                                {% for error in profile_form.height_ft.errors %}{% if error %}<li>{{ error }}</li>{% endif %}{% endfor %}
+                                {% for error in profile_form.height_in.errors %}{% if error %}<li>{{ error }}</li>{% endif %}{% endfor %}
+                            </ul>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-400">Weight</label>
+                        <div class="flex items-center space-x-2 mt-1">
+                            <button type="button" @click="weightUnit = 'kg'" :class="{'bg-teal': weightUnit === 'kg', 'bg-gray-700': weightUnit !== 'kg'}" class="px-3 py-1 rounded-lg text-sm">kg</button>
+                            <button type="button" @click="weightUnit = 'lbs'" :class="{'bg-teal': weightUnit === 'lbs', 'bg-gray-700': weightUnit !== 'lbs'}" class="px-3 py-1 rounded-lg text-sm">lbs</button>
+                        </div>
+                        <input type="hidden" name="weight_unit" x-model="weightUnit">
+                        <div class="mt-2">
+                           <input id="{{ profile_form.weight_kg.id }}" name="{{ profile_form.weight_kg.name }}" type="text" class="w-full p-3 bg-gray-800 border border-dark rounded-lg" x-model="weightKg">
+                        </div>
+                        {% if profile_form.weight_kg.errors %}
+                            <ul class="text-red-500 text-xs mt-1">
+                                {% for error in profile_form.weight_kg.errors %}
+                                    <li>{{ error }}</li>
+                                {% endfor %}
+                            </ul>
+                        {% endif %}
+                    </div>
+
+                    <div>
+                        {{ profile_form.date_of_birth.label(class="block text-sm font-medium text-gray-400") }}
+                        {{ profile_form.date_of_birth(class="mt-1 w-full p-3 bg-gray-800 border border-dark rounded-lg") }}
+                        {% if profile_form.date_of_birth.errors %}
+                            <ul class="text-red-500 text-xs mt-1">
+                                {% for error in profile_form.date_of_birth.errors %}
+                                    <li>{{ error }}</li>
+                                {% endfor %}
+                            </ul>
+                        {% endif %}
+                    </div>
+                    <div>
+                        {{ profile_form.gender.label(class="block text-sm font-medium text-gray-400") }}
+                        {{ profile_form.gender(class="mt-1 w-full p-3 bg-gray-800 border border-dark rounded-lg") }}
+                        {% if profile_form.gender.errors %}
+                            <ul class="text-red-500 text-xs mt-1">
+                                {% for error in profile_form.gender.errors %}
+                                    <li>{{ error }}</li>
+                                {% endfor %}
+                            </ul>
+                        {% endif %}
+                    </div>
+                    <div>
+                        {{ profile_form.activity_level.label(class="block text-sm font-medium text-gray-400") }}
+                        {{ profile_form.activity_level(class="mt-1 w-full p-3 bg-gray-800 border border-dark rounded-lg") }}
+                        {% if profile_form.activity_level.errors %}
+                            <ul class="text-red-500 text-xs mt-1">
+                                {% for error in profile_form.activity_level.errors %}
+                                    <li>{{ error }}</li>
+                                {% endfor %}
+                            </ul>
+                        {% endif %}
+                    </div>
+                    <div class="pt-4">{{ profile_form.submit_profile(class="w-full py-3 px-4 rounded-lg text-white font-semibold bg-teal") }}</div>
+                </div>
+            </form>
+        </div>
+
+        <div x-show="tab === 'account'" style="display: none;">
+            <form action="{{ url_for('settings', tab='account') }}" method="POST">
+                {{ account_form.hidden_tag() }}
+                <div class="space-y-4">
+                    <div>
+                        {{ account_form.username.label(class="block text-sm font-medium text-gray-400") }}
+                        {{ account_form.username(class="mt-1 w-full p-3 bg-gray-800 border border-dark rounded-lg") }}
+                        {% if account_form.username.errors %}
+                            <ul class="text-red-500 text-xs mt-1">
+                                {% for error in account_form.username.errors %}
+                                    <li>{{ error }}</li>
+                                {% endfor %}
+                            </ul>
+                        {% endif %}
+                    </div>
+                    <div>
+                        {{ account_form.profile_name.label(class="block text-sm font-medium text-gray-400") }}
+                        {{ account_form.profile_name(class="mt-1 w-full p-3 bg-gray-800 border border-dark rounded-lg") }}
+                        {% if account_form.profile_name.errors %}
+                            <ul class="text-red-500 text-xs mt-1">
+                                {% for error in account_form.profile_name.errors %}
+                                    <li>{{ error }}</li>
+                                {% endfor %}
+                            </ul>
+                        {% endif %}
+                    </div>
+                    <div>
+                        {{ account_form.email.label(class="block text-sm font-medium text-gray-400") }}
+                        {{ account_form.email(class="mt-1 w-full p-3 bg-gray-800 border border-dark rounded-lg") }}
+                        {% if account_form.email.errors %}
+                            <ul class="text-red-500 text-xs mt-1">
+                                {% for error in account_form.email.errors %}
+                                    <li>{{ error }}</li>
+                                {% endfor %}
+                            </ul>
+                        {% endif %}
+                    </div>
+                    <hr class="border-dark">
+                    <div>
+                        {{ account_form.current_password.label(class="block text-sm font-medium text-gray-400") }}
+                        {{ account_form.current_password(class="mt-1 w-full p-3 bg-gray-800 border border-dark rounded-lg", placeholder="Current Password") }}
+                        {% if account_form.current_password.errors %}
+                            <ul class="text-red-500 text-xs mt-1">
+                                {% for error in account_form.current_password.errors %}
+                                    <li>{{ error }}</li>
+                                {% endfor %}
+                            </ul>
+                        {% endif %}
+                    </div>
+                    <div>
+                        {{ account_form.new_password.label(class="block text-sm font-medium text-gray-400") }}
+                        {{ account_form.new_password(class="mt-1 w-full p-3 bg-gray-800 border border-dark rounded-lg", placeholder="New Password") }}
+                        {% if account_form.new_password.errors %}
+                            <ul class="text-red-500 text-xs mt-1">
+                                {% for error in account_form.new_password.errors %}
+                                    <li>{{ error }}</li>
+                                {% endfor %}
+                            </ul>
+                        {% endif %}
+                    </div>
+                    <div>
+                        {{ account_form.confirm_new_password.label(class="block text-sm font-medium text-gray-400") }}
+                        {{ account_form.confirm_new_password(class="mt-1 w-full p-3 bg-gray-800 border border-dark rounded-lg", placeholder="Confirm New Password") }}
+                        {% if account_form.confirm_new_password.errors %}
+                            <ul class="text-red-500 text-xs mt-1">
+                                {% for error in account_form.confirm_new_password.errors %}
+                                    <li>{{ error }}</li>
+                                {% endfor %}
+                            </ul>
+                        {% endif %}
+                    </div>
+                    <div class="pt-4">{{ account_form.submit_account(class="w-full py-3 px-4 rounded-lg text-white font-semibold bg-red-600") }}</div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<script>
+function unitConverter(initialHeightCm, initialWeightKg) {
+    return {
+        heightUnit: 'cm',
+        weightUnit: 'kg',
+        heightCm: initialHeightCm,
+        heightFt: Math.floor(initialHeightCm / 30.48),
+        heightIn: Math.round((initialHeightCm / 2.54) % 12),
+        weightKg: initialWeightKg,
+        init() {
+            this.heightCm = parseFloat(this.heightCm);
+            this.weightKg = parseFloat(this.weightKg);
+
+            this.$watch('heightUnit', (newUnit) => {
+                if (newUnit === 'ft') {
+                    const totalInches = this.heightCm / 2.54;
+                    this.heightFt = Math.floor(totalInches / 12);
+                    this.heightIn = Math.round(totalInches % 12);
+                }
+            });
+            this.$watch('heightFt', (newVal) => {
+                 this.heightCm = (this.heightFt * 30.48) + (this.heightIn * 2.54);
+            });
+            this.$watch('heightIn', (newVal) => {
+                 this.heightCm = (this.heightFt * 30.48) + (this.heightIn * 2.54);
+            });
+            this.$watch('weightUnit', (newUnit) => {
+                if (newUnit === 'lbs') {
+                    this.weightKg = this.weightKg * 2.20462;
+                } else {
+                    this.weightKg = this.weightKg / 2.20462;
+                }
+            });
+        }
+    }
+}
+</script>
+{% endblock %}
