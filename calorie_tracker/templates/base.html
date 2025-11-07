@@ -1,70 +1,152 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ title }} - deficit</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
-    <style>
-        body { font-family: 'Inter', sans-serif; background-color: #121212; color: #FFFFFF; }
-        .bg-dark { background-color: #212121; }
-        .border-dark { border-color: #333333; }
-        .text-teal { color: #00C4B8; }
-        .bg-teal { background-color: #00C4B8; }
-        .flash-message { transition: opacity 0.5s ease-out; }
-        /* Custom scrollbar for better aesthetics */
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #121212; }
-        ::-webkit-scrollbar-thumb { background: #444444; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #555555; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ title }} - Deficit</title>
+
+  <!-- Tailwind + Chart.js -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    /* ---------- Global Theme ---------- */
+    body {
+      font-family: 'Inter Tight', sans-serif;
+      background-color: #121212;
+      color: #fff;
+    }
+
+    .bg-dark { background-color: #1E1E1E; }
+    .accent-green { color: #C7FF41; }
+    .accent-blue { color: #5BEAFF; }
+    .accent-purple { color: #A970FF; }
+
+    /* ---------- Header Styles ---------- */
+    header {
+      background-color: #1E1E1E;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+    }
+
+    header a {
+      transition: color 0.2s ease, transform 0.2s ease;
+    }
+
+    header a:hover {
+      color: #C7FF41; /* soft green hover accent */
+    }
+
+    header a.active {
+      color: #C7FF41;
+      font-weight: 700;
+    }
+
+    /* ---------- Flash Messages ---------- */
+    .flash-message {
+      transition: opacity 0.5s ease-out;
+      border-radius: 0.75rem;
+      font-weight: 500;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+    }
+    .flash-success {
+      background-color: #1E1E1E;
+      border-left: 4px solid #C7FF41;
+      color: #C7FF41;
+    }
+    .flash-error {
+      background-color: #1E1E1E;
+      border-left: 4px solid #FF375F;
+      color: #FF375F;
+    }
+
+    /* ---------- Scrollbar ---------- */
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: #121212; }
+    ::-webkit-scrollbar-thumb {
+      background: #2A2A2A;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover { background: #3A3A3A; }
+
+    /* ---------- Link Colors ---------- */
+    .text-red { color: #FF375F; }
+    .text-red:hover { color: #FF667F; }
+
+    /* ---------- Page Layout ---------- */
+    main {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem 1rem 4rem;
+    }
+  </style>
 </head>
 <body>
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            <div id="flash-container" class="fixed top-20 left-1/2 -translate-x-1/2 w-full max-w-md z-50 px-4">
-            {% for category, message in messages %}
-                <div class="flash-message p-4 mb-4 text-sm rounded-lg shadow-lg {{ 'bg-green-700 text-white' if category == 'success' else 'bg-red-700 text-white' }}" role="alert">
-                    {{ message }}
-                </div>
-            {% endfor %}
-            </div>
-        {% endif %}
-    {% endwith %}
 
-    <header class="bg-dark text-white p-4 shadow-md flex flex-col md:flex-row justify-between items-center md:space-x-4">
-        <div class="flex-1 text-center md:text-left text-xl font-bold mb-2 md:mb-0">Welcome, {{ current_user.profile_name or current_user.username }}</div>
-        <nav class="flex-1">
-            <ul class="flex justify-center md:justify-end space-x-4">
-                <li><a href="{{ url_for('main.dashboard') }}" class="hover:text-teal {% if title == 'Dashboard' %}text-teal{% endif %}">Dashboard</a></li>
-                <li><a href="{{ url_for('log.log_entry') }}" class="hover:text-teal {% if title == 'Log' %}text-teal{% endif %}">Log</a></li>
-                <li><a href="{{ url_for('profile.goals') }}" class="hover:text-teal {% if title == 'Goals' %}text-teal{% endif %}">Goals</a></li>
-                <li><a href="{{ url_for('profile.settings') }}" class="hover:text-teal {% if title == 'Settings' %}text-teal{% endif %}">Settings</a></li>
-                <li><a href="{{ url_for('auth.logout') }}" class="text-red-500 hover:text-red-400">Logout</a></li>
-            </ul>
-        </nav>
-    </header>
+  <!-- Flash Messages -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div id="flash-container" class="fixed top-20 left-1/2 -translate-x-1/2 w-full max-w-md z-50 px-4">
+        {% for category, message in messages %}
+          <div class="flash-message p-4 mb-4 text-sm {{ 'flash-success' if category == 'success' else 'flash-error' }}">
+            {{ message }}
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
 
-    <main class="max-w-lg mx-auto md:max-w-screen-xl">
-        {% block content %}{% endblock %}
-    </main>
-    
-    <script src="//unpkg.com/alpinejs" defer></script>
-    <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const flashContainer = document.getElementById('flash-container');
-        if (flashContainer) {
-            setTimeout(() => {
-                let messages = flashContainer.querySelectorAll('.flash-message');
-                messages.forEach(message => {
-                    message.style.opacity = '0';
-                    setTimeout(() => message.remove(), 500);
-                });
-            }, 4000);
-        }
+  <!-- Header -->
+  <header class="p-4 flex flex-col md:flex-row justify-between items-center space-y-2 md:space-y-0 md:space-x-6">
+    <div class="flex-1 text-center md:text-left text-xl font-bold">
+      Welcome, {{ current_user.profile_name or current_user.username }}
+    </div>
+
+    <nav class="flex-1">
+      <ul class="flex justify-center md:justify-end space-x-6 font-semibold">
+        <li>
+          <a href="{{ url_for('main.dashboard') }}"
+             class="{% if title == 'Dashboard' %}active{% endif %}">Dashboard</a>
+        </li>
+        <li>
+          <a href="{{ url_for('log.log_entry') }}"
+             class="{% if title == 'Log' %}active{% endif %}">Log</a>
+        </li>
+        <li>
+          <a href="{{ url_for('profile.goals') }}"
+             class="{% if title == 'Goals' %}active{% endif %}">Goals</a>
+        </li>
+        <li>
+          <a href="{{ url_for('profile.settings') }}"
+             class="{% if title == 'Settings' %}active{% endif %}">Settings</a>
+        </li>
+        <li>
+          <a href="{{ url_for('auth.logout') }}" class="text-red">Logout</a>
+        </li>
+      </ul>
+    </nav>
+  </header>
+
+  <!-- Page Content -->
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+
+  <script src="//unpkg.com/alpinejs" defer></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const flashContainer = document.getElementById('flash-container');
+      if (flashContainer) {
+        setTimeout(() => {
+          flashContainer.querySelectorAll('.flash-message').forEach(msg => {
+            msg.style.opacity = '0';
+            setTimeout(() => msg.remove(), 500);
+          });
+        }, 4000);
+      }
     });
-    </script>
+  </script>
 </body>
 </html>

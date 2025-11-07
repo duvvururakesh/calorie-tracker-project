@@ -1,113 +1,102 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="p-6 pb-24 mx-auto max-w-screen-xl">
-    <div class="p-6 bg-dark rounded-xl shadow-lg">
-        <h2 class="text-2xl font-bold mb-4 text-center">Goals</h2>
-        <form action="{{ url_for('profile.goals') }}" method="POST">
-            {{ goals_form.hidden_tag() }}
-            <div class="space-y-4">
-                <div>
-                    {{ goals_form.calorie_goal.label(class="block text-sm font-medium text-gray-400") }}
-                    {{ goals_form.calorie_goal(class="mt-1 w-full p-3 bg-gray-800 border border-dark rounded-lg") }}
-                    {% if goals_form.calorie_goal.errors %}
-                        <ul class="text-red-500 text-xs mt-1">
-                            {% for error in goals_form.calorie_goal.errors %}
-                                <li>{{ error }}</li>
-                            {% endfor %}
-                        </ul>
-                    {% endif %}
-                </div>
-                <div>
-                    {{ goals_form.calories_burnt_goal.label(class="block text-sm font-medium text-gray-400") }}
-                    {{ goals_form.calories_burnt_goal(class="mt-1 w-full p-3 bg-gray-800 border border-dark rounded-lg") }}
-                    {% if goals_form.calories_burnt_goal.errors %}
-                        <ul class="text-red-500 text-xs mt-1">
-                            {% for error in goals_form.calories_burnt_goal.errors %}
-                                <li>{{ error }}</li>
-                            {% endfor %}
-                        </ul>
-                    {% endif %}
-                </div>
-                <div>
-                    {{ goals_form.protein_goal.label(class="block text-sm font-medium text-gray-400") }}
-                    {{ goals_form.protein_goal(class="mt-1 w-full p-3 bg-gray-800 border border-dark rounded-lg") }}
-                    {% if goals_form.protein_goal.errors %}
-                        <ul class="text-red-500 text-xs mt-1">
-                            {% for error in goals_form.protein_goal.errors %}
-                                <li>{{ error }}</li>
-                            {% endfor %}
-                        </ul>
-                    {% endif %}
-                </div>
-                <div>
-                    {{ goals_form.carbs_goal.label(class="block text-sm font-medium text-gray-400") }}
-                    {{ goals_form.carbs_goal(class="mt-1 w-full p-3 bg-gray-800 border border-dark rounded-lg") }}
-                    {% if goals_form.carbs_goal.errors %}
-                        <ul class="text-red-500 text-xs mt-1">
-                            {% for error in goals_form.carbs_goal.errors %}
-                                <li>{{ error }}</li>
-                            {% endfor %}
-                        </ul>
-                    {% endif %}
-                </div>
-                <div>
-                    {{ goals_form.fat_goal.label(class="block text-sm font-medium text-gray-400") }}
-                    {{ goals_form.fat_goal(class="mt-1 w-full p-3 bg-gray-800 border border-dark rounded-lg") }}
-                    {% if goals_form.fat_goal.errors %}
-                        <ul class="text-red-500 text-xs mt-1">
-                            {% for error in goals_form.fat_goal.errors %}
-                                <li>{{ error }}</li>
-                            {% endfor %}
-                        </ul>
-                    {% endif %}
-                </div>
-                <div>
-                    {{ goals_form.sugar_goal.label(class="block text-sm font-medium text-gray-400") }}
-                    {{ goals_form.sugar_goal(class="mt-1 w-full p-3 bg-gray-800 border border-dark rounded-lg") }}
-                    {% if goals_form.sugar_goal.errors %}
-                        <ul class="text-red-500 text-xs mt-1">
-                            {% for error in goals_form.sugar_goal.errors %}
-                                <li>{{ error }}</li>
-                            {% endfor %}
-                        </ul>
-                    {% endif %}
-                </div>
-                <div>
-                    {{ goals_form.water_goal.label(class="block text-sm font-medium text-gray-400") }}
-                    {{ goals_form.water_goal(class="mt-1 w-full p-3 bg-gray-800 border border-dark rounded-lg") }}
-                    {% if goals_form.water_goal.errors %}
-                        <ul class="text-red-500 text-xs mt-1">
-                            {% for error in goals_form.water_goal.errors %}
-                                <li>{{ error }}</li>
-                            {% endfor %}
-                        </ul>
-                    {% endif %}
-                </div>
-                <div>
-                    {{ goals_form.step_goal.label(class="block text-sm font-medium text-gray-400") }}
-                    {{ goals_form.step_goal(class="mt-1 w-full p-3 bg-gray-800 border border-dark rounded-lg") }}
-                    {% if goals_form.step_goal.errors %}
-                        <ul class="text-red-500 text-xs mt-1">
-                            {% for error in goals_form.step_goal.errors %}
-                                <li>{{ error }}</li>
-                            {% endfor %}
-                        </ul>
-                    {% endif %}
-                </div>
-                <div>
-                    {{ goals_form.sleep_goal.label(class="block text-sm font-medium text-gray-400") }}
-                    {{ goals_form.sleep_goal(class="mt-1 w-full p-3 bg-gray-800 border border-dark rounded-lg") }}
-                    {% if goals_form.sleep_goal.errors %}
-                        <ul class="text-red-500 text-xs mt-1">
-                            {% for error in goals_form.sleep_goal.errors %}
-                                <li>{{ error }}</li>
-                            {% endfor %}
-                        </ul>
-                    {% endif %}
-                </div>
-                <div class="pt-4">{{ goals_form.submit_goals(class="w-full py-3 px-4 rounded-lg text-white font-semibold bg-teal") }}</div>
-            </div>
-        </form>
-    </div>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;600;700&display=swap" rel="stylesheet">
+
+<style>
+  body {
+    font-family: 'Inter Tight', sans-serif;
+    background-color: #121212;
+    color: #fff;
+  }
+
+  .card {
+    background-color: #1E1E1E;
+    border-radius: 1.25rem;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  .card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+  }
+
+  .accent-green { color: #C7FF41; }
+
+  .input-dark {
+    background-color: #2A2A2A;
+    border: none;
+    color: #fff;
+    border-radius: 0.75rem;
+    padding: 0.75rem;
+    width: 100%;
+    transition: background 0.2s, box-shadow 0.2s;
+  }
+  .input-dark:focus {
+    outline: none;
+    background-color: #333;
+    box-shadow: 0 0 0 2px #C7FF41;
+  }
+
+  .btn-primary {
+    background-color: #C7FF41;
+    color: #000;
+    font-weight: 600;
+    padding: 0.75rem 1rem;
+    border-radius: 0.75rem;
+    transition: background 0.2s;
+    width: 100%;
+  }
+  .btn-primary:hover {
+    background-color: #D6FF73;
+  }
+
+  label {
+    color: #bbb;
+    font-weight: 500;
+  }
+
+  h2 {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: #fff;
+  }
+</style>
+
+<div class="p-6 pb-24 mx-auto max-w-screen-md">
+  <div class="card p-6">
+    <h2 class="text-2xl font-bold mb-6 text-center accent-green">Goals</h2>
+
+    <form action="{{ url_for('profile.goals') }}" method="POST">
+      {{ goals_form.hidden_tag() }}
+      <div class="space-y-5">
+        {% for field in [
+            goals_form.calorie_goal,
+            goals_form.calories_burnt_goal,
+            goals_form.protein_goal,
+            goals_form.carbs_goal,
+            goals_form.fat_goal,
+            goals_form.sugar_goal,
+            goals_form.water_goal,
+            goals_form.step_goal,
+            goals_form.sleep_goal
+          ] %}
+        <div>
+          {{ field.label(class="block text-sm font-medium mb-1 text-gray-400") }}
+          {{ field(class="input-dark") }}
+          {% if field.errors %}
+            <ul class="text-red-500 text-xs mt-1">
+              {% for error in field.errors %}
+                <li>{{ error }}</li>
+              {% endfor %}
+            </ul>
+          {% endif %}
+        </div>
+        {% endfor %}
+        <div class="pt-4">
+          {{ goals_form.submit_goals(class="btn-primary") }}
+        </div>
+      </div>
+    </form>
+  </div>
 </div>
 {% endblock %}
