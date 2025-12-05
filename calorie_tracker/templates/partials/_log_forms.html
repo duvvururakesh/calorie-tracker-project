@@ -1,0 +1,191 @@
+<!-- Unified flat dark theme log forms -->
+
+<style>
+  .form-card {
+    background-color: #1E1E1E;
+    border-radius: 1.25rem;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    padding: 1.25rem;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .form-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+  }
+
+  .form-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    color: #fff;
+  }
+
+  .input-dark {
+    width: 100%;
+    padding: 0.75rem;
+    background-color: #2A2A2A;
+    border: none;
+    border-radius: 0.75rem;
+    color: #fff;
+    transition: all 0.2s ease;
+  }
+
+  .input-dark:focus {
+    outline: none;
+    background-color: #333;
+    box-shadow: 0 0 0 2px #C7FF41;
+  }
+
+  .btn-submit {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border-radius: 0.75rem;
+    font-weight: 600;
+    background-color: #C7FF41;
+    color: #000;
+    transition: all 0.2s ease;
+  }
+
+  .btn-submit:hover {
+    background-color: #D6FF73;
+  }
+
+  .unit-toggle {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .unit-btn {
+    flex: 1;
+    text-align: center;
+    padding: 0.4rem 0.75rem;
+    border-radius: 0.5rem;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+  }
+
+  .unit-btn-active {
+    background-color: #C7FF41;
+    color: #000;
+  }
+
+  .unit-btn-inactive {
+    background-color: #2A2A2A;
+    color: #ccc;
+  }
+
+  .unit-btn-inactive:hover {
+    background-color: #333;
+  }
+
+  label {
+    color: #bbb;
+    font-weight: 500;
+  }
+</style>
+
+<!-- FOOD FORM -->
+<div x-show="tab === 'food'" class="space-y-4">
+  <div class="form-card">
+    <h3 class="form-title">Log Food</h3>
+    <form method="POST" class="space-y-4">
+      {{ food_form.hidden_tag() }}
+      {{ food_form.food_name(class="input-dark", placeholder="Food Name") }}
+      {{ food_form.food_time(class="input-dark") }}
+      {{ food_form.calories(class="input-dark", placeholder="Calories") }}
+      <div class="grid grid-cols-2 gap-4">
+        {{ food_form.protein(class="input-dark", placeholder="Protein (g)") }}
+        {{ food_form.carbs(class="input-dark", placeholder="Carbs (g)") }}
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        {{ food_form.fat(class="input-dark", placeholder="Fat (g)") }}
+        {{ food_form.sugar(class="input-dark", placeholder="Sugar (g)") }}
+      </div>
+      {{ food_form.submit_food(class="btn-submit") }}
+    </form>
+  </div>
+</div>
+
+<!-- WATER FORM -->
+<div x-show="tab === 'water'" style="display: none;" class="space-y-4">
+  <div class="form-card">
+    <h3 class="form-title">Log Water</h3>
+    <form method="POST" class="space-y-4">
+      {{ water_form.hidden_tag() }}
+      {{ water_form.water_amount(class="input-dark", placeholder="Amount in ml") }}
+      {{ water_form.submit_water(class="btn-submit") }}
+    </form>
+  </div>
+</div>
+
+<!-- WEIGHT FORM -->
+<div x-show="tab === 'weight'" style="display: none;" class="space-y-4">
+  <div class="form-card" x-data="{ weightUnit: 'kg' }">
+    <h3 class="form-title">Log Weight</h3>
+    <form method="POST" class="space-y-4">
+      {{ weight_form.hidden_tag() }}
+      <div>
+        <div class="unit-toggle mb-2">
+          <button type="button"
+                  @click="weightUnit = 'kg'"
+                  :class="weightUnit === 'kg' ? 'unit-btn-active' : 'unit-btn-inactive'"
+                  class="unit-btn">kg</button>
+          <button type="button"
+                  @click="weightUnit = 'lbs'"
+                  :class="weightUnit === 'lbs' ? 'unit-btn-active' : 'unit-btn-inactive'"
+                  class="unit-btn">lbs</button>
+        </div>
+        <input type="hidden" name="weight_unit" x-model="weightUnit">
+        {{ weight_form.weight_amount(class="input-dark", placeholder="Weight") }}
+      </div>
+      {{ weight_form.submit_weight(class="btn-submit") }}
+    </form>
+  </div>
+</div>
+
+<!-- STEPS FORM -->
+<div x-show="tab === 'steps'" style="display: none;" class="space-y-4">
+  <div class="form-card">
+    <h3 class="form-title">Log Steps</h3>
+    <form method="POST" class="space-y-4">
+      {{ step_form.hidden_tag() }}
+      {{ step_form.step_amount(class="input-dark", placeholder="Number of steps") }}
+      {{ step_form.submit_steps(class="btn-submit") }}
+    </form>
+  </div>
+</div>
+
+<!-- SLEEP FORM -->
+<div x-show="tab === 'sleep'" style="display: none;" class="space-y-4">
+  <div class="form-card">
+    <h3 class="form-title">Log Sleep</h3>
+    <form method="POST" class="space-y-4">
+      {{ sleep_form.hidden_tag() }}
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm mb-1">Sleep Time</label>
+          {{ sleep_form.sleep_time(class="input-dark") }}
+        </div>
+        <div>
+          <label class="block text-sm mb-1">Wake Time</label>
+          {{ sleep_form.wake_time(class="input-dark") }}
+        </div>
+      </div>
+      {{ sleep_form.submit_sleep(class="btn-submit") }}
+    </form>
+  </div>
+</div>
+
+<!-- CALORIES BURNT FORM -->
+<div x-show="tab === 'calories_burnt'" style="display: none;" class="space-y-4">
+  <div class="form-card">
+    <h3 class="form-title">Log Calories Burnt</h3>
+    <form method="POST" class="space-y-4">
+      {{ calories_burnt_form.hidden_tag() }}
+      {{ calories_burnt_form.calories_burnt(class="input-dark", placeholder="Calories Burnt") }}
+      {{ calories_burnt_form.submit_calories_burnt(class="btn-submit") }}
+    </form>
+  </div>
+</div>

@@ -1,0 +1,324 @@
+{% extends "base.html" %}
+{% block content %}
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;600;700&display=swap" rel="stylesheet">
+
+<style>
+  /* ---------- Base UI ---------- */
+  body {
+    font-family: 'Inter Tight', sans-serif;
+    background-color: #121212;
+    color: #fff;
+  }
+
+  .card {
+    background-color: #1E1E1E;
+    border-radius: 1.25rem;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  .card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+  }
+
+  /* ---------- Centered tiles ---------- */
+  .centered-tile {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    min-height: 180px;
+  }
+
+  .accent-purple { color: #A970FF; }
+  .accent-green { color: #C7FF41; }
+  .accent-blue { color: #5BEAFF; }
+
+  /* ---------- Ring Chart Styles ---------- */
+  .ring {
+    position: relative;
+    width: 130px;
+    height: 130px;
+    margin: 0 auto;
+  }
+
+  /* Ensure no boxes, outlines, focus rings, or backgrounds */
+  .ring canvas {
+    background: transparent !important;
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+    filter: none !important;
+    -webkit-tap-highlight-color: transparent !important;
+    -webkit-user-select: none !important;
+  }
+
+  canvas,
+  canvas:focus,
+  canvas:active,
+  canvas:focus-visible {
+    outline: none !important;
+    border: none !important;
+    box-shadow: none !important;
+    -webkit-tap-highlight-color: transparent !important;
+  }
+
+  .ring span {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+
+  /* ---------- Progress bars ---------- */
+  .progress-container {
+    background-color: #2A2A2A;
+    border-radius: 9999px;
+    height: 10px;
+    width: 100%;
+    overflow: hidden;
+  }
+
+  .progress-bar {
+    height: 100%;
+    border-radius: 9999px;
+    transition: width 0.5s ease;
+  }
+</style>
+
+<div class="p-6 pb-24 mx-auto max-w-screen-xl" x-data="{showBMIStatus: false, showLbs: false}">
+
+  <!-- ---------- WEEK SELECTOR ---------- -->
+  <div class="flex justify-between items-center mb-6 bg-[#1E1E1E] p-2 rounded-2xl shadow-md">
+    <a href="{{ url_for('main.dashboard', selected_date=prev_week_start.strftime('%Y-%m-%d')) }}" class="p-2 rounded-full hover:bg-[#292929]">&lt;</a>
+
+    <div class="flex-1 flex justify-between items-center overflow-x-auto mx-2 md:mx-0 md:justify-center">
+      {% for day in weekly_dates %}
+      {% set is_today = day == date.today() %}
+      {% set display_day = 'Today' if is_today else day.strftime('%-d') %}
+      <a href="{{ url_for('main.dashboard', selected_date=day.strftime('%Y-%m-%d')) }}"
+         class="flex-1 text-center py-2 mx-1 rounded-full font-semibold {{ 'bg-[#C7FF41] text-black' if day == selected_date else 'bg-[#2A2A2A] hover:bg-[#333] text-gray-300' }}">
+          <span class="text-sm block">{{ day.strftime('%a') }}</span>
+          <span class="text-xs">{{ display_day }}</span>
+      </a>
+      {% endfor %}
+    </div>
+
+    <a href="{{ url_for('main.dashboard', selected_date=next_week_start.strftime('%Y-%m-%d')) }}" class="p-2 rounded-full hover:bg-[#292929]">&gt;</a>
+  </div>
+
+  <!-- ---------- DASHBOARD GRID ---------- -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    
+    <!-- LEFT COLUMN -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+    <!-- Calorie Intake -->
+    <div class="card centered-tile p-6">
+        <h3 class="text-lg font-semibold text-gray-300 mb-3">Calorie Intake</h3>
+        <div class="relative flex items-center justify-center w-[130px] h-[130px]">
+        <canvas id="calorieRingChart" tabindex="-1" class="absolute inset-0"></canvas>
+        <div class="absolute inset-0 flex flex-col items-center justify-center">
+            <p class="text-2xl font-bold accent-green">{{ totals.calories|int }}</p>
+            <p class="text-sm text-gray-400">/ {{ goals.calorie_goal|int }}</p>
+        </div>
+        </div>
+    </div>
+
+    <!-- Calories Burnt -->
+    <div class="card centered-tile p-6">
+        <h3 class="text-lg font-semibold text-gray-300 mb-3">Calories Burnt</h3>
+        <div class="relative flex items-center justify-center w-[130px] h-[130px]">
+        <canvas id="caloriesBurntRingChart" tabindex="-1" class="absolute inset-0"></canvas>
+        <div class="absolute inset-0 flex flex-col items-center justify-center">
+            <p class="text-2xl font-bold accent-purple">{{ totals.calories_burnt|int }}</p>
+            <p class="text-sm text-gray-400">/ {{ goals.calories_burnt_goal|int }}</p>
+        </div>
+        </div>
+    </div>
+
+    <!-- BMI -->
+    <div class="card centered-tile p-6">
+        <p class="text-sm text-gray-400">BMI</p>
+        <p class="text-2xl font-bold accent-blue">{{ health_metrics.bmi }}</p>
+        <p class="text-xs text-gray-500">{{ health_metrics.bmi_status }}</p>
+    </div>
+
+    <!-- Current Weight -->
+    <div class="card centered-tile p-6 cursor-pointer" @click="showLbs = !showLbs">
+        <p class="text-sm text-gray-400">Current Weight</p>
+        <p class="text-2xl font-bold accent-green" x-text="showLbs ? '{{ formatted_weight.lbs }}' : '{{ formatted_weight.kg }}'"></p>
+        <p class="text-xs text-gray-500" x-text="showLbs ? 'lbs' : 'kg'"></p>
+    </div>
+
+    <!-- Maintenance -->
+    <div class="card centered-tile p-6">
+        <p class="text-sm text-gray-400">Maintenance</p>
+        <p class="text-2xl font-bold accent-blue">{{ health_metrics.maintenance_calories }}</p>
+        <p class="text-xs text-gray-500">kcal/day</p>
+    </div>
+
+    <!-- Calorie Deficit -->
+    <div class="card centered-tile p-6">
+        <p class="text-sm text-gray-400">Calorie Deficit</p>
+        <p class="text-2xl font-bold {% if health_metrics.calorie_deficit|float >= 0 %}accent-green{% else %}accent-purple{% endif %}">
+        {{ health_metrics.calorie_deficit }}
+        </p>
+        <p class="text-xs text-gray-500">kcal</p>
+    </div>
+    </div>
+
+
+    <!-- RIGHT COLUMN -->
+    <div class="grid grid-cols-1 md:grid-cols-1 gap-6">
+
+      <!-- Macros -->
+      <div class="card p-6 text-center">
+        <h2 class="text-xl font-bold mb-4">Macros</h2>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {% set macros = [
+            ('Protein', totals.protein, goals.protein_goal, '#FF375F'),
+            ('Carbs', totals.carbs, goals.carbs_goal, '#5BEAFF'),
+            ('Fat', totals.fat, goals.fat_goal, '#FFD60A'),
+            ('Sugar', totals.sugar, goals.sugar_goal, '#A970FF')
+          ] %}
+          {% for name, total, goal, color in macros %}
+          <div>
+            <div class="relative w-24 h-24 mx-auto">
+              <canvas id="{{ name | lower }}RingChart" tabindex="-1"></canvas>
+              <div class="absolute inset-0 flex flex-col items-center justify-center">
+                <span class="text-md font-bold" style="color: {{ color }}">{{ total|int }}g</span>
+                <span class="text-xs text-gray-400">/ {{ goal|int }}g</span>
+              </div>
+            </div>
+            <p class="mt-2 font-semibold text-sm">{{ name }}</p>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Activity -->
+      <div class="card p-6 space-y-4">
+        <h2 class="text-xl font-bold mb-2">Activity</h2>
+        <div>
+          <h3 class="font-bold text-lg">Water</h3>
+          <div class="progress-container"><div id="water-progress" class="progress-bar bg-[#5BEAFF]"></div></div>
+          <p class="text-sm text-gray-400">{{ totals.water|int }} / {{ goals.water_goal }} ml</p>
+        </div>
+        <div>
+          <h3 class="font-bold text-lg">Steps</h3>
+          <div class="progress-container"><div id="step-progress" class="progress-bar bg-[#C7FF41]"></div></div>
+          <p class="text-sm text-gray-400">{{ totals.steps|int }} / {{ goals.step_goal }}</p>
+        </div>
+        <div>
+          <h3 class="font-bold text-lg">Sleep</h3>
+          <div class="progress-container"><div id="sleep-progress" class="progress-bar bg-[#A970FF]"></div></div>
+          <p class="text-sm text-gray-400">{{ "%.1f"|format(totals.sleep) }} / {{ "%.1f"|format(goals.sleep_goal) }} hrs</p>
+        </div>
+      </div>
+
+      <!-- Trends -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="card p-5">
+          <h3 class="font-bold text-lg mb-2">Weight Trend</h3>
+          <canvas id="weightChart" tabindex="-1"></canvas>
+        </div>
+        <div class="card p-5">
+          <h3 class="font-bold text-lg mb-2">Sleep Trend</h3>
+          <canvas id="sleepChart" tabindex="-1"></canvas>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const totals = JSON.parse('{{ totals | tojson | safe }}');
+  const goals = JSON.parse('{{ goals | tojson | safe }}');
+  const chartData = JSON.parse('{{ chart_data | tojson | safe }}');
+
+  // ---------- Chart.js Ring Charts ----------
+  function createRingChart(ctx, value, goal, color) {
+    const remaining = Math.max(0, goal - value);
+    return new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        datasets: [{
+          data: [value, remaining],
+          backgroundColor: [color, '#2A2A2A'],
+          borderWidth: 0
+        }]
+      },
+      options: {
+        backgroundColor: 'transparent',
+        cutout: '80%',
+        layout: { padding: 0 },
+        plugins: { legend: { display: false }, tooltip: { enabled: false } },
+        responsive: true,
+        maintainAspectRatio: false
+      }
+    });
+  }
+
+  // Create all rings
+  createRingChart(document.getElementById('calorieRingChart').getContext('2d'), totals.calories, goals.calorie_goal, '#C7FF41');
+  createRingChart(document.getElementById('caloriesBurntRingChart').getContext('2d'), totals.calories_burnt, goals.calories_burnt_goal, '#A970FF');
+  createRingChart(document.getElementById('proteinRingChart').getContext('2d'), totals.protein, goals.protein_goal, '#FF375F');
+  createRingChart(document.getElementById('carbsRingChart').getContext('2d'), totals.carbs, goals.carbs_goal, '#5BEAFF');
+  createRingChart(document.getElementById('fatRingChart').getContext('2d'), totals.fat, goals.fat_goal, '#FFD60A');
+  createRingChart(document.getElementById('sugarRingChart').getContext('2d'), totals.sugar, goals.sugar_goal, '#A970FF');
+
+  // ---------- Progress Bars ----------
+  document.getElementById('water-progress').style.width = `${(totals.water / goals.water_goal) * 100}%`;
+  document.getElementById('step-progress').style.width = `${(totals.steps / goals.step_goal) * 100}%`;
+  document.getElementById('sleep-progress').style.width = `${(totals.sleep / goals.sleep_goal) * 100}%`;
+
+  // ---------- Trend Charts ----------
+  new Chart(document.getElementById('weightChart').getContext('2d'), {
+    type: 'line',
+    data: {
+      labels: chartData.weight_labels,
+      datasets: [{
+        label: 'Weight (kg)',
+        data: chartData.weight_values,
+        borderColor: '#5BEAFF',
+        backgroundColor: 'rgba(91,234,255,0.2)',
+        tension: 0.4,
+        fill: true,
+        pointRadius: 3,
+        pointBackgroundColor: '#C7FF41'
+      }]
+    },
+    options: {
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#bbb' } },
+        y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#bbb' } }
+      }
+    }
+  });
+
+  new Chart(document.getElementById('sleepChart').getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels: chartData.sleep_labels,
+      datasets: [{
+        label: 'Sleep (hrs)',
+        data: chartData.sleep_values,
+        backgroundColor: 'rgba(169,112,255,0.8)'
+      }]
+    },
+    options: {
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#bbb' } },
+        y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#bbb' } }
+      }
+    }
+  });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+{% block content %}
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;600;700&display=swap" rel="stylesheet">
+
+<style>
+  body {
+    font-family: 'Inter Tight', sans-serif;
+    background-color: #121212;
+    color: #fff;
+  }
+
+  .card {
+    background-color: #1E1E1E;
+    border-radius: 1.25rem;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    padding: 1.5rem;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+  }
+
+  .accent-green { color: #C7FF41; }
+  .accent-blue { color: #5BEAFF; }
+  .accent-purple { color: #A970FF; }
+
+  .input-dark {
+    width: 100%;
+    padding: 0.75rem;
+    background-color: #2A2A2A;
+    border: none;
+    border-radius: 0.75rem;
+    color: #fff;
+    transition: all 0.2s ease;
+  }
+
+  .input-dark:focus {
+    outline: none;
+    background-color: #333;
+    box-shadow: 0 0 0 2px #C7FF41;
+  }
+
+  .btn-submit {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border-radius: 0.75rem;
+    font-weight: 600;
+    background-color: #C7FF41;
+    color: #000;
+    transition: all 0.2s ease;
+  }
+
+  .btn-submit:hover {
+    background-color: #D6FF73;
+  }
+
+  a.back-link {
+    color: #C7FF41;
+    font-weight: 600;
+    transition: color 0.2s ease;
+  }
+  a.back-link:hover {
+    color: #D6FF73;
+  }
+
+  label {
+    color: #bbb;
+    font-weight: 500;
+  }
+</style>
+
+<div class="p-6 max-w-2xl mx-auto">
+
+  <!-- Header -->
+  <div class="flex items-center mb-8">
+    <a href="{{ url_for('log.log_entry', selected_date_str=selected_date.strftime('%Y-%m-%d'), tab=entry_type) }}"
+       class="back-link mr-4">&larr; Back</a>
+    <h1 class="text-2xl font-bold">Edit {{ entry_type.capitalize() }} Entry</h1>
+  </div>
+
+  <!-- Edit Form Card -->
+  <div class="card">
+    <form method="POST" class="space-y-5">
+      {{ form.hidden_tag() }}
+
+      {% if entry_type == 'food' %}
+        {{ form.food_name(class="input-dark", placeholder="Food Name") }}
+        {{ form.food_time(class="input-dark") }}
+        {{ form.calories(class="input-dark", placeholder="Calories") }}
+        <div class="grid grid-cols-2 gap-4">
+          {{ form.protein(class="input-dark", placeholder="Protein (g)") }}
+          {{ form.carbs(class="input-dark", placeholder="Carbs (g)") }}
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          {{ form.fat(class="input-dark", placeholder="Fat (g)") }}
+          {{ form.sugar(class="input-dark", placeholder="Sugar (g)") }}
+        </div>
+        <input type="submit" class="btn-submit" value="Update Food">
+
+      {% elif entry_type == 'water' %}
+        {{ form.water_amount(class="input-dark", placeholder="Amount in ml") }}
+        <input type="submit" class="btn-submit" value="Update Water">
+
+      {% elif entry_type == 'weight' %}
+        {{ form.weight_amount(class="input-dark", placeholder="Weight in kg") }}
+        <input type="submit" class="btn-submit" value="Update Weight">
+
+      {% elif entry_type == 'steps' %}
+        {{ form.step_amount(class="input-dark", placeholder="Number of steps") }}
+        <input type="submit" class="btn-submit" value="Update Steps">
+
+      {% elif entry_type == 'sleep' %}
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm mb-1">Sleep Time</label>
+            {{ form.sleep_time(class="input-dark") }}
+          </div>
+          <div>
+            <label class="block text-sm mb-1">Wake Time</label>
+            {{ form.wake_time(class="input-dark") }}
+          </div>
+        </div>
+        <input type="submit" class="btn-submit" value="Update Sleep">
+
+      {% elif entry_type == 'calories_burnt' %}
+        {{ form.calories_burnt(class="input-dark", placeholder="Calories Burnt") }}
+        <input type="submit" class="btn-submit" value="Update Calories Burnt">
+      {% endif %}
+    </form>
+  </div>
+</div>
+{% endblock %}
