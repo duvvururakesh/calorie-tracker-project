@@ -3,7 +3,7 @@ import { useAuth } from '@/hooks/useAuth'
 import api from '@/api/client'
 
 export default function Layout() {
-  const { user, setUser } = useAuth()
+  const { setUser } = useAuth()
   const navigate = useNavigate()
 
   async function handleLogout() {
@@ -13,32 +13,46 @@ export default function Layout() {
   }
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#121212' }}>
-      <header style={{ backgroundColor: '#1E1E1E', boxShadow: '0 2px 10px rgba(0,0,0,0.3)' }}
-              className="px-6 py-4 flex flex-col md:flex-row justify-between items-center gap-3">
-        <div className="font-bold text-lg">
-          Welcome, <span style={{ color: '#C7FF41' }}>{user?.profile_name || user?.username}</span>
-        </div>
-        <nav className="flex items-center gap-6 font-semibold text-sm">
+    <div className="min-h-screen bg-bg">
+      <header
+        className="bg-surface px-6 py-4 flex flex-col md:flex-row justify-between items-center gap-3"
+        style={{ boxShadow: '0 2px 10px rgba(0,0,0,0.3)' }}
+      >
+        {/* Brand */}
+        <span className="font-bold text-lg tracking-tight select-none">
+          Fit<span className="text-lime">it</span>
+        </span>
+
+        {/* Nav */}
+        <nav className="flex items-center gap-5 text-sm font-semibold flex-wrap justify-center">
           {[
             { to: '/dashboard', label: 'Dashboard' },
-            { to: '/log', label: 'Log' },
-            { to: '/goals', label: 'Goals' },
-            { to: '/settings', label: 'Settings' },
+            { to: '/log',       label: 'Log' },
+            { to: '/goals',     label: 'Goals' },
+            { to: '/settings',  label: 'Settings' },
           ].map(({ to, label }) => (
-            <NavLink key={to} to={to}
-              className={({ isActive }) => isActive ? '' : 'text-gray-400 hover:text-white transition-colors'}
-              style={({ isActive }) => isActive ? { color: '#C7FF41' } : {}}>
+            <NavLink
+              key={to}
+              to={to}
+              className={({ isActive }) =>
+                isActive
+                  ? 'text-lime font-bold'
+                  : 'text-gray-400 hover:text-white transition-colors'
+              }
+            >
               {label}
             </NavLink>
           ))}
-          <button onClick={handleLogout} style={{ color: '#FF375F' }}
-                  className="hover:opacity-80 transition-opacity">
+          <button
+            onClick={handleLogout}
+            className="text-danger px-3 py-1 rounded-lg hover:bg-danger/10 transition-colors font-semibold"
+          >
             Logout
           </button>
         </nav>
       </header>
-      <main className="max-w-6xl mx-auto px-4 py-8 pb-24">
+
+      <main className="max-w-6xl mx-auto px-4 py-8 pb-12">
         <Outlet />
       </main>
     </div>

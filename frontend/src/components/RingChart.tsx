@@ -17,11 +17,19 @@ export default function RingChart({ value, goal, color, size = 120 }: Props) {
 
   return (
     <PieChart width={size} height={size}>
-      <Pie data={data} dataKey="v" cx="50%" cy="50%"
-           innerRadius={size * 0.35} outerRadius={size * 0.46}
-           startAngle={90} endAngle={-270} strokeWidth={0}>
-        <Cell fill={over > 0 ? '#FF375F' : color} />
-        <Cell fill="#2A2A2A" />
+      <Pie
+        data={data}
+        dataKey="v"
+        cx="50%"
+        cy="50%"
+        innerRadius={size * 0.35}
+        outerRadius={size * 0.46}
+        startAngle={90}
+        endAngle={-270}
+        strokeWidth={0}
+      >
+        <Cell fill={over > 0 ? 'var(--color-danger)' : color} />
+        <Cell fill="var(--color-elevated)" />
       </Pie>
     </PieChart>
   )

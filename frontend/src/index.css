@@ -2,24 +2,38 @@
 
 @import "tailwindcss";
 
+/* ─── Design Tokens ──────────────────────────────────────────────────────── */
+@theme {
+  --color-bg:       #121212;
+  --color-surface:  #1E1E1E;
+  --color-elevated: #2A2A2A;
+  --color-lime:     #C7FF41;
+  --color-danger:   #FF375F;
+  --color-info:     #5BEAFF;
+  --color-warn:     #FFD60A;
+  --color-accent:   #A970FF;
+}
+
 @layer base {
   * { box-sizing: border-box; margin: 0; padding: 0; }
 
   body {
-    background-color: #121212;
+    background-color: var(--color-bg);
     color: #fff;
     font-family: 'Inter Tight', sans-serif;
     -webkit-font-smoothing: antialiased;
   }
 
+  /* ─── Scrollbar ──────────────────────────────────────────────────────── */
   ::-webkit-scrollbar { width: 6px; height: 6px; }
-  ::-webkit-scrollbar-track { background: #121212; }
-  ::-webkit-scrollbar-thumb { background: #2A2A2A; border-radius: 3px; }
+  ::-webkit-scrollbar-track { background: var(--color-bg); }
+  ::-webkit-scrollbar-thumb { background: var(--color-elevated); border-radius: 3px; }
   ::-webkit-scrollbar-thumb:hover { background: #3A3A3A; }
 
+  /* ─── Form Controls ──────────────────────────────────────────────────── */
   input[type="text"], input[type="email"], input[type="password"],
   input[type="number"], input[type="date"], input[type="time"], select, textarea {
-    background-color: #2A2A2A;
+    background-color: var(--color-elevated);
     border: none;
     color: #fff;
     border-radius: 0.75rem;
@@ -32,8 +46,15 @@
   }
   input:focus, select:focus, textarea:focus {
     background-color: #333;
-    box-shadow: 0 0 0 2px #C7FF41;
+    box-shadow: 0 0 0 2px var(--color-lime);
   }
   input::placeholder { color: #666; }
-  select option { background: #1E1E1E; }
+  select option { background: var(--color-surface); }
+
+  /* ─── Button Focus ───────────────────────────────────────────────────── */
+  button:focus-visible {
+    outline: 2px solid var(--color-lime);
+    outline-offset: 2px;
+    border-radius: 0.5rem;
+  }
 }
