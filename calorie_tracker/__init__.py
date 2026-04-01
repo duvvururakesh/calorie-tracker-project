@@ -13,12 +13,7 @@ migrate = Migrate()
 REACT_BUILD = os.path.join(os.path.dirname(__file__), '..', 'frontend', 'dist')
 
 def create_app():
-    app = Flask(
-        __name__,
-        static_folder=REACT_BUILD,
-        static_url_path='',
-    )
-
+    app = Flask(__name__)
     app.config.from_object(Config)
 
     CORS(app, supports_credentials=True, origins=['http://localhost:3000'])
