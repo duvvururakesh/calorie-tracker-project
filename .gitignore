@@ -33,3 +33,11 @@ migrations/
 build/
 dist/
 *.egg-info/
+
+# Node / frontend
+node_modules/
+frontend/node_modules/
+frontend/dist/
+
+# Claude Code internal
+.claude/

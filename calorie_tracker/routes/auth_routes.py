@@ -12,6 +12,12 @@ def signup():
         return redirect(url_for('main.dashboard'))
     form = SignUpForm()
     if form.validate_on_submit():
+        if User.query.filter_by(email=form.email.data).first():
+            flash('An account with that email already exists.', 'danger')
+            return render_template('signup.html', form=form, title='Sign Up')
+        if User.query.filter_by(username=form.username.data).first():
+            flash('That username is already taken.', 'danger')
+            return render_template('signup.html', form=form, title='Sign Up')
         new_user = User(username=form.username.data, email=form.email.data, profile_name=form.username.data)
         new_user.set_password(form.password.data)
         db.session.add(new_user)

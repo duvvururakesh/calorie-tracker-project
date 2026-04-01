@@ -68,31 +68,55 @@
 
     <form action="{{ url_for('profile.goals') }}" method="POST">
       {{ goals_form.hidden_tag() }}
-      <div class="space-y-5">
-        {% for field in [
-            goals_form.calorie_goal,
-            goals_form.calories_burnt_goal,
-            goals_form.protein_goal,
-            goals_form.carbs_goal,
-            goals_form.fat_goal,
-            goals_form.sugar_goal,
-            goals_form.water_goal,
-            goals_form.step_goal,
-            goals_form.sleep_goal
-          ] %}
+      <div class="space-y-6">
+
+        <!-- Calories -->
         <div>
-          {{ field.label(class="block text-sm font-medium mb-1 text-gray-400") }}
-          {{ field(class="input-dark") }}
-          {% if field.errors %}
-            <ul class="text-red-500 text-xs mt-1">
-              {% for error in field.errors %}
-                <li>{{ error }}</li>
-              {% endfor %}
-            </ul>
-          {% endif %}
+          <p class="text-xs font-semibold uppercase tracking-widest text-gray-500 mb-3">Calories</p>
+          <div class="grid grid-cols-2 gap-4">
+            {% for field in [goals_form.calorie_goal, goals_form.calories_burnt_goal] %}
+            <div>
+              {{ field.label(class="block text-sm font-medium mb-1 text-gray-400") }}
+              {{ field(class="input-dark") }}
+              {% if field.errors %}<p class="text-red-500 text-xs mt-1">{{ field.errors[0] }}</p>{% endif %}
+            </div>
+            {% endfor %}
+          </div>
         </div>
-        {% endfor %}
-        <div class="pt-4">
+
+        <hr class="border-[#2A2A2A]">
+
+        <!-- Macros -->
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-widest text-gray-500 mb-3">Macros</p>
+          <div class="grid grid-cols-2 gap-4">
+            {% for field in [goals_form.protein_goal, goals_form.carbs_goal, goals_form.fat_goal, goals_form.sugar_goal] %}
+            <div>
+              {{ field.label(class="block text-sm font-medium mb-1 text-gray-400") }}
+              {{ field(class="input-dark") }}
+              {% if field.errors %}<p class="text-red-500 text-xs mt-1">{{ field.errors[0] }}</p>{% endif %}
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+
+        <hr class="border-[#2A2A2A]">
+
+        <!-- Activity -->
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-widest text-gray-500 mb-3">Activity</p>
+          <div class="grid grid-cols-2 gap-4">
+            {% for field in [goals_form.water_goal, goals_form.step_goal, goals_form.sleep_goal] %}
+            <div>
+              {{ field.label(class="block text-sm font-medium mb-1 text-gray-400") }}
+              {{ field(class="input-dark") }}
+              {% if field.errors %}<p class="text-red-500 text-xs mt-1">{{ field.errors[0] }}</p>{% endif %}
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div class="pt-2">
           {{ goals_form.submit_goals(class="btn-primary") }}
         </div>
       </div>

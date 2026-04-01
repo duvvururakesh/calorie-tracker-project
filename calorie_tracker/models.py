@@ -45,28 +45,28 @@ class FoodEntry(db.Model):
     carbs = db.Column(db.Float, default=0)
     fat = db.Column(db.Float, default=0)
     sugar = db.Column(db.Float, default=0)
-    user = db.relationship('User', backref=db.backref('food_entries', lazy=True))
+    user = db.relationship('User', backref=db.backref('food_entries', lazy=True, cascade='all, delete-orphan'))
 
 class WaterEntry(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     date = db.Column(db.Date, nullable=False)
     amount_ml = db.Column(db.Integer, nullable=False)
-    user = db.relationship('User', backref=db.backref('water_entries', lazy=True))
+    user = db.relationship('User', backref=db.backref('water_entries', lazy=True, cascade='all, delete-orphan'))
 
 class WeightEntry(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     date = db.Column(db.Date, nullable=False)
     weight_kg = db.Column(db.Float, nullable=False)
-    user = db.relationship('User', backref=db.backref('weight_entries', lazy=True))
+    user = db.relationship('User', backref=db.backref('weight_entries', lazy=True, cascade='all, delete-orphan'))
 
 class StepEntry(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     date = db.Column(db.Date, nullable=False)
     steps = db.Column(db.Integer, nullable=False)
-    user = db.relationship('User', backref=db.backref('step_entries', lazy=True))
+    user = db.relationship('User', backref=db.backref('step_entries', lazy=True, cascade='all, delete-orphan'))
 
 class SleepEntry(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -75,11 +75,11 @@ class SleepEntry(db.Model):
     duration_hours = db.Column(db.Float, nullable=False)
     sleep_time = db.Column(db.Time, nullable=True)
     wake_time = db.Column(db.Time, nullable=True)
-    user = db.relationship('User', backref=db.backref('sleep_entries', lazy=True))
+    user = db.relationship('User', backref=db.backref('sleep_entries', lazy=True, cascade='all, delete-orphan'))
 
 class CaloriesBurntEntry(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     date = db.Column(db.Date, nullable=False)
     calories_burnt = db.Column(db.Integer, nullable=False)
-    user = db.relationship('User', backref=db.backref('calories_burnt_entries', lazy=True))
+    user = db.relationship('User', backref=db.backref('calories_burnt_entries', lazy=True, cascade='all, delete-orphan'))

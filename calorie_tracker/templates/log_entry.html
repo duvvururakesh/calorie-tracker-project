@@ -133,11 +133,11 @@
   <div x-data="{ tab: '{{ request.args.get('tab', 'food') }}' }">
 
     <!-- TABS -->
-    <div class="flex flex-wrap gap-2 mb-6 justify-center">
+    <div class="flex gap-2 mb-6 overflow-x-auto pb-1" style="-ms-overflow-style:none; scrollbar-width:none;">
       {% for t in ['food','water','weight','steps','sleep','calories_burnt'] %}
       <button @click="tab = '{{ t }}'"
               :class="{ 'tab-btn-active': tab === '{{ t }}', 'tab-btn-inactive': tab !== '{{ t }}' }"
-              class="tab-btn">
+              class="tab-btn whitespace-nowrap flex-shrink-0">
         {{ t.replace('_', ' ') }}
       </button>
       {% endfor %}
