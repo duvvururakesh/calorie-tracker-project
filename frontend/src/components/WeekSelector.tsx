@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 
 interface Props {
@@ -22,19 +23,29 @@ function toISO(d: Date) {
 }
 
 export default function WeekSelector({ selectedDate, onSelect }: Props) {
-  const days = getWeekDates(selectedDate)
+  // viewAnchor controls which week is visible; selectedDate controls the highlight
+  const [viewAnchor, setViewAnchor] = useState(selectedDate)
+  const days = getWeekDates(viewAnchor)
   const today = toISO(new Date())
 
-  function shift(n: number) {
-    const d = new Date(selectedDate + 'T12:00:00')
+  // If selectedDate moves outside the visible week (e.g. set externally), follow it
+  useEffect(() => {
+    setViewAnchor(current => {
+      const visible = getWeekDates(current).map(d => toISO(d))
+      return visible.includes(selectedDate) ? current : selectedDate
+    })
+  }, [selectedDate])
+
+  function shiftWeek(n: number) {
+    const d = new Date(viewAnchor + 'T12:00:00')
     d.setDate(d.getDate() + n)
-    onSelect(toISO(d))
+    setViewAnchor(toISO(d))
   }
 
   return (
     <div className="flex justify-between items-center mb-6 p-2 rounded-2xl bg-surface shadow-[0_2px_6px_rgba(0,0,0,0.4)]">
       <button
-        onClick={() => shift(-7)}
+        onClick={() => shiftWeek(-7)}
         aria-label="Previous week"
         className="p-2 rounded-full hover:bg-elevated transition-colors text-gray-400 hover:text-white flex-shrink-0"
       >
@@ -54,13 +65,10 @@ export default function WeekSelector({ selectedDate, onSelect }: Props) {
                 isSelected ? 'bg-lime text-black font-bold' : 'bg-elevated text-white/70'
               }`}
             >
-              {/* Weekday — smaller, muted */}
               <span className={`text-[10px] font-normal leading-tight ${isSelected ? 'opacity-50' : 'text-gray-500'}`}>
                 {d.toLocaleDateString('en', { weekday: 'short' })}
               </span>
-              {/* Date number — larger, bold */}
               <span className="text-sm font-bold leading-tight">{d.getDate()}</span>
-              {/* Today indicator dot */}
               <span className={`w-1 h-1 rounded-full mt-0.5 ${
                 isToday
                   ? isSelected ? 'bg-black/40' : 'bg-lime'
@@ -72,7 +80,7 @@ export default function WeekSelector({ selectedDate, onSelect }: Props) {
       </div>
 
       <button
-        onClick={() => shift(7)}
+        onClick={() => shiftWeek(7)}
         aria-label="Next week"
         className="p-2 rounded-full hover:bg-elevated transition-colors text-gray-400 hover:text-white flex-shrink-0"
       >
