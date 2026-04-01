@@ -99,34 +99,11 @@ npm install
 
 ## Running the App
 
-### Development (two servers)
-
-**Terminal 1 — Flask API on port 5001:**
 ```bash
-source venv/bin/activate
-flask run --port 5001
+./run.sh
 ```
 
-**Terminal 2 — Vite dev server on port 3000:**
-```bash
-cd frontend
-npm run dev
-```
-
-Open `http://localhost:3000`. Vite proxies `/api` requests to Flask.
-
-### Production (single server)
-
-Build the React app and let Flask serve it:
-
-```bash
-cd frontend
-npm run build
-cd ..
-flask run --port 5001
-```
-
-Open `http://localhost:5001`. Flask serves the React build and all API routes.
+Open `http://localhost:5001`. That's it — Flask serves the React app and all API routes from a single server. Frontend changes are watched and rebuilt automatically.
 
 ---
 

@@ -1,24 +1,24 @@
 #!/bin/bash
-# Start both Flask API and React dev server together
-# Usage: ./run.sh
-
+# One command, one server: http://localhost:5001
 cd "$(dirname "$0")"
-
-echo "Starting Fitit (Flask API + React dev server)..."
-echo "  API  → http://localhost:5001"
-echo "  UI   → http://localhost:3000"
-echo ""
-echo "Press Ctrl+C to stop both servers."
-echo ""
 
 source venv/bin/activate
 
-# Start Flask in background
-FLASK_APP=app.py flask run --port 5001 &
-FLASK_PID=$!
+# Build once first so Flask has something to serve
+echo "Building frontend..."
+cd frontend && npm run build -- --logLevel silent
+cd ..
 
-# Start Vite dev server in foreground
-cd frontend && npm run dev
+echo ""
+echo "Starting Fitit → http://localhost:5001"
+echo "Press Ctrl+C to stop."
+echo ""
 
-# On exit, kill Flask too
-kill $FLASK_PID 2>/dev/null
+# Watch for frontend changes and auto-rebuild in background
+(cd frontend && npx vite build --watch --logLevel silent) &
+VITE_PID=$!
+
+# Flask serves everything
+FLASK_APP=app.py flask run --port 5001
+
+kill $VITE_PID 2>/dev/null
