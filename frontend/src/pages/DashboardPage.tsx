@@ -16,7 +16,6 @@ import type { ActiveLog, MetricType } from '@/components/logging/types'
 import InlineLogForm from '@/components/logging/InlineLogForm'
 import BottomSheet from '@/components/logging/BottomSheet'
 import FoodSheetForm from '@/components/logging/FoodSheetForm'
-import SleepSheetForm from '@/components/logging/SleepSheetForm'
 import TodaysLog from '@/components/logging/TodaysLog'
 
 /* ─── Chart constants ─────────────────────────────────────────────────────── */
@@ -82,8 +81,7 @@ export default function DashboardPage() {
   const activeCard: MetricType | null = activeLog?.metric ?? null
 
   function openCard(metric: MetricType) {
-    if (metric === 'food')  { setActiveLog({ tier: 'sheet', metric: 'food' });  return }
-    if (metric === 'sleep') { setActiveLog({ tier: 'sheet', metric: 'sleep' }); return }
+    if (metric === 'food') { setActiveLog({ tier: 'sheet', metric: 'food' }); return }
     setActiveLog({ tier: 'card', metric })
   }
   function closeCard() { setActiveLog(null) }
@@ -263,6 +261,9 @@ export default function DashboardPage() {
                   <Bar dataKey="hrs" fill="var(--color-accent)" radius={[3, 3, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
+              {activeCard === 'sleep' && (
+                <InlineLogForm metric="sleep" date={date} onSuccess={invalidate} onClose={closeCard} />
+              )}
             </LoggableCard>
           </div>
         </div>
@@ -280,13 +281,6 @@ export default function DashboardPage() {
         <FoodSheetForm date={date} onSuccess={invalidate} />
       </BottomSheet>
 
-      <BottomSheet
-        isOpen={activeLog?.tier === 'sheet' && activeLog.metric === 'sleep'}
-        onClose={() => setActiveLog(null)}
-        title="Log Sleep"
-      >
-        <SleepSheetForm date={date} onSuccess={invalidate} />
-      </BottomSheet>
     </div>
   )
 }

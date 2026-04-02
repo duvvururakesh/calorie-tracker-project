@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { Check } from 'lucide-react'
 import useLogMutation from '@/hooks/useLogMutation'
 
@@ -16,6 +16,7 @@ export default function InlineLogForm({ metric, date, onSuccess, onClose }: Prop
       {metric === 'steps'  && <SimpleInline date={date} onSuccess={onSuccess} type="steps"          field="steps"          placeholder="Steps" />}
       {metric === 'weight' && <WeightInline date={date} onSuccess={onSuccess} />}
       {metric === 'burnt'  && <SimpleInline date={date} onSuccess={onSuccess} type="calories_burnt" field="calories_burnt" placeholder="kcal" />}
+      {metric === 'sleep'  && <SleepInline  date={date} onSuccess={onSuccess} />}
       <button
         type="button"
         onClick={onClose}
@@ -103,6 +104,43 @@ function SimpleInline({ date, onSuccess, type, field, placeholder }: {
         className="!py-1.5 !text-sm !rounded-lg flex-1" autoFocus />
       <SubmitIcon onClick={() => { if (value) mut.mutate({ [field]: Number(value) }) }}
         disabled={!value || mut.isPending} />
+    </div>
+  )
+}
+
+/* ─── Sleep with time pickers ────────────────────────────────────────────── */
+function SleepInline({ date, onSuccess }: { date: string; onSuccess: () => void }) {
+  const [sleepTime, setSleepTime] = useState('22:00')
+  const [wakeTime,  setWakeTime]  = useState('06:00')
+  const mut = useLogMutation('sleep', date, onSuccess)
+
+  const duration = useMemo(() => {
+    const [sh, sm] = sleepTime.split(':').map(Number)
+    const [wh, wm] = wakeTime.split(':').map(Number)
+    let mins = (wh * 60 + wm) - (sh * 60 + sm)
+    if (mins <= 0) mins += 24 * 60
+    return (mins / 60).toFixed(1)
+  }, [sleepTime, wakeTime])
+
+  return (
+    <div className="space-y-2">
+      <div className="grid grid-cols-2 gap-2">
+        <div>
+          <p className="text-[10px] text-gray-500 mb-1 uppercase tracking-wide">Sleep</p>
+          <input type="time" value={sleepTime} onChange={e => setSleepTime(e.target.value)}
+            className="!py-1.5 !text-sm !rounded-lg w-full" />
+        </div>
+        <div>
+          <p className="text-[10px] text-gray-500 mb-1 uppercase tracking-wide">Wake</p>
+          <input type="time" value={wakeTime} onChange={e => setWakeTime(e.target.value)}
+            className="!py-1.5 !text-sm !rounded-lg w-full" />
+        </div>
+      </div>
+      <div className="flex items-center justify-between">
+        <span className="text-sm text-gray-400">Duration: <span className="font-bold text-accent">{duration} hrs</span></span>
+        <SubmitIcon onClick={() => mut.mutate({ sleep_time: sleepTime, wake_time: wakeTime })}
+          disabled={mut.isPending} />
+      </div>
     </div>
   )
 }
