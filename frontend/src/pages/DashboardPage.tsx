@@ -232,9 +232,9 @@ export default function DashboardPage() {
             <FlipMetricBlock metric="sleep" value={totals.sleep} goal={goals.sleep_goal} date={date} onSuccess={invalidate} />
           </div>
 
-          {/* Trend charts — loggable */}
+          {/* Trend charts — read-only */}
           <div className="grid grid-cols-2 gap-4">
-            <LoggableCard metric="weight" activeCard={activeCard} onOpen={openCard} onClose={closeCard}>
+            <Card>
               <h3 className="text-sm font-bold mb-3">Weight</h3>
               <ResponsiveContainer width="100%" height={120}>
                 <LineChart data={weightData}>
@@ -246,11 +246,8 @@ export default function DashboardPage() {
                     dot={{ fill: 'var(--color-lime)', r: 3 }} />
                 </LineChart>
               </ResponsiveContainer>
-              {activeCard === 'weight' && (
-                <InlineLogForm metric="weight" date={date} onSuccess={invalidate} onClose={closeCard} />
-              )}
-            </LoggableCard>
-            <LoggableCard metric="sleep" activeCard={activeCard} onOpen={openCard} onClose={closeCard}>
+            </Card>
+            <Card>
               <h3 className="text-sm font-bold mb-3">Sleep</h3>
               <ResponsiveContainer width="100%" height={120}>
                 <BarChart data={sleepData}>
@@ -261,10 +258,7 @@ export default function DashboardPage() {
                   <Bar dataKey="hrs" fill="var(--color-accent)" radius={[3, 3, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
-              {activeCard === 'sleep' && (
-                <InlineLogForm metric="sleep" date={date} onSuccess={invalidate} onClose={closeCard} />
-              )}
-            </LoggableCard>
+            </Card>
           </div>
         </div>
       </div>
