@@ -78,22 +78,21 @@ export default function CalorieBlock({ kind, value, goal, date, onSuccess }: Pro
     <div className="flex flex-col items-center justify-center text-center min-h-[120px]">
       <p className="text-xs text-gray-400 mb-2 font-semibold uppercase tracking-wide">{cfg.label}</p>
 
-      {/* Ring chart matching INTAKE, with - number + overlaid in center */}
-      <div className="relative">
-        <RingChart value={value} goal={goal} color={cfg.color} size={110} />
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-1">
+      {/* − ring + on one line */}
+      <div className="flex items-center gap-2">
+        <button
+          onClick={() => lastEntry && delMut.mutate(lastEntry.id as number)}
+          disabled={busy || entries.length === 0}
+          className="w-7 h-7 rounded-full bg-elevated flex items-center justify-center
+                     hover:bg-[#3A3A3A] transition-colors disabled:opacity-30"
+        >
+          <Minus size={13} />
+        </button>
 
-          {/* − number + on one line */}
-          <div className="flex items-center gap-1.5">
-            <button
-              onClick={() => lastEntry && delMut.mutate(lastEntry.id as number)}
-              disabled={busy || entries.length === 0}
-              className="w-5 h-5 rounded-full bg-elevated/80 flex items-center justify-center
-                         hover:bg-[#3A3A3A] transition-colors disabled:opacity-30"
-            >
-              <Minus size={10} />
-            </button>
-
+        {/* Ring with number + goal inside */}
+        <div className="relative">
+          <RingChart value={value} goal={goal} color={cfg.color} size={110} />
+          <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
             {editing ? (
               <input
                 ref={inputRef}
@@ -102,7 +101,7 @@ export default function CalorieBlock({ kind, value, goal, date, onSuccess }: Pro
                 onChange={e => setInputVal(e.target.value)}
                 onBlur={commitCustom}
                 onKeyDown={e => { if (e.key === 'Enter') commitCustom() }}
-                className="w-12 text-center !py-0 !text-base font-bold !rounded-md"
+                className="w-14 text-center !py-0 !text-lg font-bold !rounded-md pointer-events-auto"
                 style={{ color: cfg.color }}
                 min="1"
                 placeholder="0"
@@ -110,25 +109,24 @@ export default function CalorieBlock({ kind, value, goal, date, onSuccess }: Pro
             ) : (
               <button
                 onClick={startEditing}
-                className="text-xl font-bold leading-none"
+                className="text-xl font-bold leading-none pointer-events-auto"
                 style={{ color: cfg.color }}
               >
                 {Math.round(value)}
               </button>
             )}
-
-            <button
-              onClick={() => addMut.mutate(cfg.buildPayload(cfg.step))}
-              disabled={busy}
-              className="w-5 h-5 rounded-full bg-elevated/80 flex items-center justify-center
-                         hover:bg-[#3A3A3A] transition-colors disabled:opacity-30"
-            >
-              <Plus size={10} />
-            </button>
+            <span className="text-xs text-gray-400">/ {goal}</span>
           </div>
-
-          <span className="text-xs text-gray-400">/ {goal}</span>
         </div>
+
+        <button
+          onClick={() => addMut.mutate(cfg.buildPayload(cfg.step))}
+          disabled={busy}
+          className="w-7 h-7 rounded-full bg-elevated flex items-center justify-center
+                     hover:bg-[#3A3A3A] transition-colors disabled:opacity-30"
+        >
+          <Plus size={13} />
+        </button>
       </div>
     </div>
   )
