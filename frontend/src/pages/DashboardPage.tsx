@@ -13,7 +13,6 @@ import RingChart from '@/components/RingChart'
 import Card from '@/components/Card'
 import Spinner from '@/components/Spinner'
 import type { ActiveLog, MetricType } from '@/components/logging/types'
-import QuickLogStrip from '@/components/logging/QuickLogStrip'
 import InlineLogForm from '@/components/logging/InlineLogForm'
 import BottomSheet from '@/components/logging/BottomSheet'
 import FoodSheetForm from '@/components/logging/FoodSheetForm'
@@ -79,9 +78,8 @@ export default function DashboardPage() {
   const [showLbs, setShowLbs] = useState(false)
   const [activeLog, setActiveLog] = useState<ActiveLog | null>(null)
 
-  // Derive which card is expanded (only card-tier)
-  const activeCard: MetricType | null =
-    activeLog?.tier === 'card' ? activeLog.metric : null
+  // Derive which card is expanded (card-tier or sheet-tier)
+  const activeCard: MetricType | null = activeLog?.metric ?? null
 
   function openCard(metric: MetricType) {
     if (metric === 'food')  { setActiveLog({ tier: 'sheet', metric: 'food' });  return }
@@ -130,15 +128,7 @@ export default function DashboardPage() {
 
       <WeekSelector selectedDate={date} onSelect={setDate} />
 
-      {/* ── Tier 1: Quick-Log Strip ─────────────────────────────────────── */}
-      <QuickLogStrip
-        activeLog={activeLog}
-        setActiveLog={setActiveLog}
-        date={date}
-        onSuccess={invalidate}
-      />
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
         {/* ── LEFT ────────────────────────────────────────────────────────── */}
         <div className="grid grid-cols-2 gap-4 content-start">
@@ -244,9 +234,9 @@ export default function DashboardPage() {
             <FlipMetricBlock metric="sleep" value={totals.sleep} goal={goals.sleep_goal} date={date} onSuccess={invalidate} />
           </div>
 
-          {/* Trend charts */}
+          {/* Trend charts — loggable */}
           <div className="grid grid-cols-2 gap-4">
-            <Card>
+            <LoggableCard metric="weight" activeCard={activeCard} onOpen={openCard} onClose={closeCard}>
               <h3 className="text-sm font-bold mb-3">Weight</h3>
               <ResponsiveContainer width="100%" height={120}>
                 <LineChart data={weightData}>
@@ -258,8 +248,11 @@ export default function DashboardPage() {
                     dot={{ fill: 'var(--color-lime)', r: 3 }} />
                 </LineChart>
               </ResponsiveContainer>
-            </Card>
-            <Card>
+              {activeCard === 'weight' && (
+                <InlineLogForm metric="weight" date={date} onSuccess={invalidate} onClose={closeCard} />
+              )}
+            </LoggableCard>
+            <LoggableCard metric="sleep" activeCard={activeCard} onOpen={openCard} onClose={closeCard}>
               <h3 className="text-sm font-bold mb-3">Sleep</h3>
               <ResponsiveContainer width="100%" height={120}>
                 <BarChart data={sleepData}>
@@ -270,7 +263,7 @@ export default function DashboardPage() {
                   <Bar dataKey="hrs" fill="var(--color-accent)" radius={[3, 3, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
-            </Card>
+            </LoggableCard>
           </div>
         </div>
       </div>
