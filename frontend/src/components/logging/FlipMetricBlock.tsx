@@ -104,15 +104,7 @@ export default function FlipMetricBlock({ metric, value, goal, date, onSuccess }
 
       <Icon size={18} style={{ color: cfg.color }} className="opacity-70" />
 
-      {/* Value */}
-      <div className="text-center">
-        <p className="text-2xl font-bold leading-none" style={{ color: cfg.color }}>
-          {cfg.format(value)}
-        </p>
-        <p className="text-xs text-gray-500 mt-0.5">/ {cfg.format(goal)} {cfg.unit}</p>
-      </div>
-
-      {/* +/- row */}
+      {/* Value + +/- on same line */}
       <div className="flex items-center gap-3">
         <button
           onClick={() => lastEntry && delMut.mutate(lastEntry.id as number)}
@@ -123,8 +115,8 @@ export default function FlipMetricBlock({ metric, value, goal, date, onSuccess }
           <Minus size={13} />
         </button>
 
-        <p className="text-[10px] text-gray-600 font-semibold uppercase tracking-widest w-10 text-center">
-          {cfg.label}
+        <p className="text-2xl font-bold leading-none" style={{ color: cfg.color }}>
+          {cfg.format(value)}
         </p>
 
         <button
@@ -135,6 +127,11 @@ export default function FlipMetricBlock({ metric, value, goal, date, onSuccess }
         >
           <Plus size={13} />
         </button>
+      </div>
+
+      <div className="text-center">
+        <p className="text-xs text-gray-500">/ {cfg.format(goal)} {cfg.unit}</p>
+        <p className="text-[10px] text-gray-600 font-semibold uppercase tracking-widest mt-0.5">{cfg.label}</p>
       </div>
     </div>
   )
