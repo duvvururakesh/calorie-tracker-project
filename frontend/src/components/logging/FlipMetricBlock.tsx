@@ -20,6 +20,7 @@ const CONFIG: Record<Metric, {
   icon: typeof Droplets
   color: string
   step: number
+  max?: number
   field: string
   apiType: string
   entryKey: string
@@ -43,7 +44,7 @@ const CONFIG: Record<Metric, {
   sleep: {
     label: 'Sleep', unit: 'hrs',
     icon: Moon, color: 'var(--color-accent)',
-    step: 0.5, field: 'duration_hours', apiType: 'sleep', entryKey: 'sleep',
+    step: 0.5, max: 24, field: 'duration_hours', apiType: 'sleep', entryKey: 'sleep',
     format: v => `${v.toFixed(1)}`,
     formatEntry: e => `${(e.duration_hours as number).toFixed(1)} hrs`,
   },
@@ -105,7 +106,7 @@ export default function FlipMetricBlock({ metric, value, goal, date, onSuccess }
 
   function commitCustom() {
     const v = parseFloat(inputVal)
-    if (!isNaN(v) && v > 0) setAmount(v)
+    if (!isNaN(v) && v > 0) setAmount(Math.min(cfg.max ?? Infinity, v))
     setEditing(false)
   }
 
@@ -181,7 +182,7 @@ export default function FlipMetricBlock({ metric, value, goal, date, onSuccess }
               </button>
             )}
             <button
-              onClick={() => setAmount(a => parseFloat((a + cfg.step).toFixed(2)))}
+              onClick={() => setAmount(a => Math.min(cfg.max ?? Infinity, parseFloat((a + cfg.step).toFixed(2))))}
               className="w-7 h-7 rounded-full bg-elevated flex items-center justify-center hover:bg-[#3A3A3A] transition-colors"
             >
               <Plus size={13} />
