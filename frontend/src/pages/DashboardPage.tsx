@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { Plus } from 'lucide-react'
 import {
   LineChart, Line, BarChart, Bar,
   XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
@@ -10,43 +11,16 @@ import WeekSelector from '@/components/WeekSelector'
 import RingChart from '@/components/RingChart'
 import Card from '@/components/Card'
 import Spinner from '@/components/Spinner'
+import type { ActiveLog, MetricType } from '@/components/logging/types'
+import QuickLogStrip from '@/components/logging/QuickLogStrip'
+import InlineLogForm from '@/components/logging/InlineLogForm'
+import BottomSheet from '@/components/logging/BottomSheet'
+import FoodSheetForm from '@/components/logging/FoodSheetForm'
+import SleepSheetForm from '@/components/logging/SleepSheetForm'
+import TodaysLog from '@/components/logging/TodaysLog'
 
-/* ─── Sub-components ──────────────────────────────────────────────────────── */
-
-function MetricTile({ label, value, sub, color }: {
-  label: string; value: string; sub?: string; color: string
-}) {
-  return (
-    <Card className="flex flex-col items-center justify-center text-center min-h-[120px]">
-      <p className="text-xs text-gray-400 mb-1">{label}</p>
-      <p className="text-2xl font-bold" style={{ color }}>{value}</p>
-      {sub && <p className="text-xs text-gray-500 mt-0.5">{sub}</p>}
-    </Card>
-  )
-}
-
-function ProgressRow({ label, value, goal, color }: {
-  label: string; value: number; goal: number; color: string
-}) {
-  const pct = Math.min(100, goal > 0 ? (value / goal) * 100 : 0)
-  return (
-    <div>
-      <div className="flex justify-between items-center mb-1">
-        <span className="text-sm font-semibold">{label}</span>
-        <span className="text-xs text-gray-400">{Math.round(value)} / {goal}</span>
-      </div>
-      <div className="h-2.5 rounded-full overflow-hidden bg-elevated">
-        <div
-          className="h-full rounded-full transition-all duration-500"
-          style={{ width: `${pct}%`, backgroundColor: color }}
-        />
-      </div>
-    </div>
-  )
-}
-
-/* ─── Shared chart constants ──────────────────────────────────────────────── */
-const TICK  = { fill: '#9CA3AF', fontSize: 10 }
+/* ─── Chart constants ─────────────────────────────────────────────────────── */
+const TICK = { fill: '#9CA3AF', fontSize: 10 }
 const TOOLTIP_STYLE = {
   backgroundColor: 'var(--color-surface)',
   border: 'none',
@@ -54,35 +28,118 @@ const TOOLTIP_STYLE = {
   fontSize: 12,
 }
 
-/* ─── Macro config ────────────────────────────────────────────────────────── */
-const MACRO_COLORS = {
-  Protein: '#FF375F',
-  Carbs:   '#5BEAFF',
-  Fat:     '#FFD60A',
-  Sugar:   '#A970FF',
-} as const
+/* ─── Loggable card wrapper ───────────────────────────────────────────────── */
+function LoggableCard({
+  metric, activeCard, onOpen, onClose, children, className = '',
+}: {
+  metric: MetricType
+  activeCard: MetricType | null
+  onOpen: (m: MetricType) => void
+  onClose: () => void
+  children: React.ReactNode
+  className?: string
+}) {
+  const isOpen = activeCard === metric
+  return (
+    <Card interactive className={`group ${className}`} onClick={() => !isOpen && onOpen(metric)}>
+      {/* + icon top-right */}
+      <button
+        onClick={e => { e.stopPropagation(); isOpen ? onClose() : onOpen(metric) }}
+        className={`absolute top-2 right-2 p-1 rounded-full transition-all
+          ${isOpen
+            ? 'bg-lime text-black rotate-45'
+            : 'text-gray-600 group-hover:text-gray-300'}`}
+      >
+        <Plus size={14} />
+      </button>
+      {children}
+    </Card>
+  )
+}
+
+/* ─── Progress row with inline expand ────────────────────────────────────────*/
+function ActivityRow({
+  label, value, goal, color, metric, activeCard, onOpen, onClose, date, onSuccess,
+}: {
+  label: string; value: number; goal: number; color: string
+  metric: MetricType; activeCard: MetricType | null
+  onOpen: (m: MetricType) => void; onClose: () => void
+  date: string; onSuccess: () => void
+}) {
+  const pct = Math.min(100, goal > 0 ? (value / goal) * 100 : 0)
+  const isOpen = activeCard === metric
+
+  return (
+    <div>
+      <button
+        onClick={() => isOpen ? onClose() : onOpen(metric)}
+        className="w-full text-left group"
+      >
+        <div className="flex justify-between items-center mb-1">
+          <span className="text-sm font-semibold group-hover:text-lime transition-colors">{label}</span>
+          <span className="text-xs text-gray-400">{Math.round(value)} / {goal}</span>
+        </div>
+        <div className="h-2.5 rounded-full overflow-hidden bg-elevated">
+          <div className="h-full rounded-full transition-all duration-500"
+            style={{ width: `${pct}%`, backgroundColor: color }} />
+        </div>
+      </button>
+      {isOpen && (
+        <InlineLogForm metric={metric} date={date} onSuccess={onSuccess} onClose={onClose} />
+      )}
+    </div>
+  )
+}
+
+/* ─── MetricTile ──────────────────────────────────────────────────────────── */
+function MetricTile({ label, value, sub, color }: {
+  label: string; value: string; sub?: string; color: string
+}) {
+  return (
+    <div className="flex flex-col items-center justify-center text-center h-full">
+      <p className="text-xs text-gray-400 mb-1">{label}</p>
+      <p className="text-2xl font-bold" style={{ color }}>{value}</p>
+      {sub && <p className="text-xs text-gray-500 mt-0.5">{sub}</p>}
+    </div>
+  )
+}
 
 /* ─── Page ────────────────────────────────────────────────────────────────── */
-
 export default function DashboardPage() {
   const { user } = useAuth()
   const [date, setDate]       = useState(() => new Date().toISOString().slice(0, 10))
   const [showLbs, setShowLbs] = useState(false)
+  const [activeLog, setActiveLog] = useState<ActiveLog | null>(null)
+
+  // Derive which card is expanded (only card-tier)
+  const activeCard: MetricType | null =
+    activeLog?.tier === 'card' ? activeLog.metric : null
+
+  function openCard(metric: MetricType) {
+    if (metric === 'food')  { setActiveLog({ tier: 'sheet', metric: 'food' });  return }
+    if (metric === 'sleep') { setActiveLog({ tier: 'sheet', metric: 'sleep' }); return }
+    setActiveLog({ tier: 'card', metric })
+  }
+  function closeCard() { setActiveLog(null) }
 
   const { data, isLoading } = useQuery({
     queryKey: ['dashboard', date],
     queryFn:  () => api.get(`/dashboard?date=${date}`).then(r => r.data),
   })
 
+  function invalidate() {
+    // TanStack Query will auto-refetch via invalidation in useLogMutation
+  }
+
   if (isLoading) return <Spinner />
 
   const { totals, goals, metrics, weight_kg, weight_lbs, chart } = data
 
   const macros = [
-    { name: 'Protein', value: totals.protein,      goal: goals.protein_goal,      color: MACRO_COLORS.Protein },
-    { name: 'Carbs',   value: totals.carbs,         goal: goals.carbs_goal,         color: MACRO_COLORS.Carbs   },
-    { name: 'Fat',     value: totals.fat,           goal: goals.fat_goal,           color: MACRO_COLORS.Fat     },
-    { name: 'Sugar',   value: totals.sugar,         goal: goals.sugar_goal,         color: MACRO_COLORS.Sugar   },
+    { name: 'Protein', value: totals.protein,      goal: goals.protein_goal,      color: '#FF375F' },
+    { name: 'Carbs',   value: totals.carbs,         goal: goals.carbs_goal,         color: '#5BEAFF' },
+    { name: 'Fat',     value: totals.fat,           goal: goals.fat_goal,           color: '#FFD60A' },
+    { name: 'Sugar',   value: totals.sugar,         goal: goals.sugar_goal,         color: '#A970FF' },
   ]
 
   const weightData = chart.weight_labels.map((l: string, i: number) => ({ date: l, kg:  chart.weight_values[i] }))
@@ -91,9 +148,7 @@ export default function DashboardPage() {
   const deficit      = Number(metrics.calorie_deficit)
   const deficitColor = isNaN(deficit) || metrics.calorie_deficit === 'N/A'
     ? 'var(--color-info)'
-    : deficit >= 0
-      ? 'var(--color-lime)'
-      : 'var(--color-danger)'
+    : deficit >= 0 ? 'var(--color-lime)' : 'var(--color-danger)'
 
   return (
     <div>
@@ -107,61 +162,92 @@ export default function DashboardPage() {
 
       <WeekSelector selectedDate={date} onSelect={setDate} />
 
+      {/* ── Tier 1: Quick-Log Strip ─────────────────────────────────────── */}
+      <QuickLogStrip
+        activeLog={activeLog}
+        setActiveLog={setActiveLog}
+        date={date}
+        onSuccess={invalidate}
+      />
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
-        {/* ── LEFT: metrics ─────────────────────────────────────────────── */}
-        <div className="grid grid-cols-2 gap-4">
+        {/* ── LEFT ────────────────────────────────────────────────────────── */}
+        <div className="grid grid-cols-2 gap-4 content-start">
 
-          {/* Calorie Intake ring */}
-          <Card className="flex flex-col items-center justify-center text-center">
-            <p className="text-xs text-gray-400 mb-2 font-semibold uppercase tracking-wide">Intake</p>
-            <div className="relative">
-              <RingChart value={totals.calories} goal={goals.calorie_goal} color="#C7FF41" size={110} />
-              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                <span className="text-xl font-bold text-lime">{Math.round(totals.calories)}</span>
-                <span className="text-xs text-gray-400">/ {goals.calorie_goal}</span>
+          {/* Calorie Intake — opens Food sheet */}
+          <LoggableCard metric="food" activeCard={activeCard} onOpen={openCard} onClose={closeCard}>
+            <div className="flex flex-col items-center justify-center text-center min-h-[120px]">
+              <p className="text-xs text-gray-400 mb-2 font-semibold uppercase tracking-wide">Intake</p>
+              <div className="relative">
+                <RingChart value={totals.calories} goal={goals.calorie_goal} color="#C7FF41" size={110} />
+                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                  <span className="text-xl font-bold text-lime">{Math.round(totals.calories)}</span>
+                  <span className="text-xs text-gray-400">/ {goals.calorie_goal}</span>
+                </div>
               </div>
             </div>
-          </Card>
+          </LoggableCard>
 
-          {/* Calories Burnt ring */}
-          <Card className="flex flex-col items-center justify-center text-center">
-            <p className="text-xs text-gray-400 mb-2 font-semibold uppercase tracking-wide">Burnt</p>
-            <div className="relative">
-              <RingChart value={totals.calories_burnt} goal={goals.calories_burnt_goal} color="#A970FF" size={110} />
-              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                <span className="text-xl font-bold text-accent">{Math.round(totals.calories_burnt)}</span>
-                <span className="text-xs text-gray-400">/ {goals.calories_burnt_goal}</span>
+          {/* Calories Burnt — inline form */}
+          <LoggableCard metric="burnt" activeCard={activeCard} onOpen={openCard} onClose={closeCard}>
+            <div className="flex flex-col items-center justify-center text-center min-h-[120px]">
+              <p className="text-xs text-gray-400 mb-2 font-semibold uppercase tracking-wide">Burnt</p>
+              <div className="relative">
+                <RingChart value={totals.calories_burnt} goal={goals.calories_burnt_goal} color="#A970FF" size={110} />
+                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                  <span className="text-xl font-bold text-accent">{Math.round(totals.calories_burnt)}</span>
+                  <span className="text-xs text-gray-400">/ {goals.calories_burnt_goal}</span>
+                </div>
               </div>
             </div>
+            {activeCard === 'burnt' && (
+              <InlineLogForm metric="burnt" date={date} onSuccess={invalidate} onClose={closeCard} />
+            )}
+          </LoggableCard>
+
+          {/* BMI — read-only */}
+          <Card className="min-h-[90px]">
+            <MetricTile label="BMI" value={metrics.bmi} sub={metrics.bmi_status} color="var(--color-info)" />
           </Card>
 
-          <MetricTile label="BMI" value={metrics.bmi} sub={metrics.bmi_status} color="var(--color-info)" />
+          {/* Weight — inline form */}
+          <LoggableCard metric="weight" activeCard={activeCard} onOpen={openCard} onClose={closeCard} className="min-h-[90px]">
+            <div onClick={e => e.stopPropagation()}>
+              <button
+                onClick={() => setShowLbs(v => !v)}
+                className="w-full text-left"
+              >
+                <MetricTile
+                  label="Weight"
+                  value={weight_kg ? (showLbs ? `${weight_lbs}` : `${weight_kg.toFixed(1)}`) : 'N/A'}
+                  sub={weight_kg ? (showLbs ? 'lbs — tap to switch' : 'kg — tap to switch') : '—'}
+                  color="var(--color-lime)"
+                />
+              </button>
+            </div>
+            {activeCard === 'weight' && (
+              <InlineLogForm metric="weight" date={date} onSuccess={invalidate} onClose={closeCard} />
+            )}
+          </LoggableCard>
 
-          <button onClick={() => setShowLbs(v => !v)} className="text-left rounded-2xl">
+          {/* Maintenance — read-only */}
+          <Card className="min-h-[90px]">
+            <MetricTile label="Maintenance" value={metrics.maintenance_calories} sub="kcal / day" color="var(--color-info)" />
+          </Card>
+
+          {/* Deficit — read-only */}
+          <Card className="min-h-[90px]">
             <MetricTile
-              label="Weight"
-              value={weight_kg ? (showLbs ? `${weight_lbs}` : `${weight_kg.toFixed(1)}`) : 'N/A'}
-              sub={weight_kg ? (showLbs ? 'lbs — tap to switch' : 'kg — tap to switch') : '—'}
-              color="var(--color-lime)"
+              label="Deficit"
+              value={metrics.calorie_deficit !== 'N/A' ? String(metrics.calorie_deficit) : 'N/A'}
+              sub="kcal"
+              color={deficitColor}
             />
-          </button>
-
-          <MetricTile
-            label="Maintenance"
-            value={metrics.maintenance_calories}
-            sub="kcal / day"
-            color="var(--color-info)"
-          />
-          <MetricTile
-            label="Deficit"
-            value={metrics.calorie_deficit !== 'N/A' ? String(metrics.calorie_deficit) : 'N/A'}
-            sub="kcal"
-            color={deficitColor}
-          />
+          </Card>
         </div>
 
-        {/* ── RIGHT: macros + activity + trends ─────────────────────────── */}
+        {/* ── RIGHT ───────────────────────────────────────────────────────── */}
         <div className="space-y-4">
 
           {/* Macros */}
@@ -173,9 +259,7 @@ export default function DashboardPage() {
                   <div className="relative">
                     <RingChart value={m.value} goal={m.goal} color={m.color} size={80} />
                     <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                      <span className="text-xs font-bold" style={{ color: m.color }}>
-                        {Math.round(m.value)}g
-                      </span>
+                      <span className="text-xs font-bold" style={{ color: m.color }}>{Math.round(m.value)}g</span>
                       <span className="text-[10px] text-gray-500">/{m.goal}g</span>
                     </div>
                   </div>
@@ -185,12 +269,24 @@ export default function DashboardPage() {
             </div>
           </Card>
 
-          {/* Activity */}
-          <Card className="space-y-3">
-            <h2 className="text-base font-bold mb-1">Activity</h2>
-            <ProgressRow label="Water" value={totals.water} goal={goals.water_goal}  color="var(--color-info)"   />
-            <ProgressRow label="Steps" value={totals.steps} goal={goals.step_goal}   color="var(--color-lime)"   />
-            <ProgressRow label="Sleep" value={totals.sleep} goal={goals.sleep_goal}  color="var(--color-accent)" />
+          {/* Activity — each row tappable */}
+          <Card className="space-y-4">
+            <h2 className="text-base font-bold">Activity</h2>
+            <ActivityRow
+              label="Water" value={totals.water} goal={goals.water_goal} color="var(--color-info)"
+              metric="water" activeCard={activeCard} onOpen={openCard} onClose={closeCard}
+              date={date} onSuccess={invalidate}
+            />
+            <ActivityRow
+              label="Steps" value={totals.steps} goal={goals.step_goal} color="var(--color-lime)"
+              metric="steps" activeCard={activeCard} onOpen={openCard} onClose={closeCard}
+              date={date} onSuccess={invalidate}
+            />
+            <ActivityRow
+              label="Sleep" value={totals.sleep} goal={goals.sleep_goal} color="var(--color-accent)"
+              metric="sleep" activeCard={activeCard} onOpen={openCard} onClose={closeCard}
+              date={date} onSuccess={invalidate}
+            />
           </Card>
 
           {/* Trend charts */}
@@ -203,13 +299,8 @@ export default function DashboardPage() {
                   <XAxis dataKey="date" tick={TICK} hide={weightData.length > 7} />
                   <YAxis tick={TICK} domain={['auto', 'auto']} width={30} />
                   <Tooltip contentStyle={TOOLTIP_STYLE} />
-                  <Line
-                    type="monotone"
-                    dataKey="kg"
-                    stroke="var(--color-info)"
-                    strokeWidth={2}
-                    dot={{ fill: 'var(--color-lime)', r: 3 }}
-                  />
+                  <Line type="monotone" dataKey="kg" stroke="var(--color-info)" strokeWidth={2}
+                    dot={{ fill: 'var(--color-lime)', r: 3 }} />
                 </LineChart>
               </ResponsiveContainer>
             </Card>
@@ -226,9 +317,28 @@ export default function DashboardPage() {
               </ResponsiveContainer>
             </Card>
           </div>
-
         </div>
       </div>
+
+      {/* ── Today's Log ─────────────────────────────────────────────────── */}
+      <TodaysLog date={date} />
+
+      {/* ── Tier 3: Bottom Sheets ────────────────────────────────────────── */}
+      <BottomSheet
+        isOpen={activeLog?.tier === 'sheet' && activeLog.metric === 'food'}
+        onClose={() => setActiveLog(null)}
+        title="Log Food"
+      >
+        <FoodSheetForm date={date} onSuccess={invalidate} />
+      </BottomSheet>
+
+      <BottomSheet
+        isOpen={activeLog?.tier === 'sheet' && activeLog.metric === 'sleep'}
+        onClose={() => setActiveLog(null)}
+        title="Log Sleep"
+      >
+        <SleepSheetForm date={date} onSuccess={invalidate} />
+      </BottomSheet>
     </div>
   )
 }
