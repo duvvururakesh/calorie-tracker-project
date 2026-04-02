@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Plus } from 'lucide-react'
+import FlipMetricBlock from '@/components/logging/FlipMetricBlock'
 import {
   LineChart, Line, BarChart, Bar,
   XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
@@ -57,39 +58,6 @@ function LoggableCard({
   )
 }
 
-/* ─── Progress row with inline expand ────────────────────────────────────────*/
-function ActivityRow({
-  label, value, goal, color, metric, activeCard, onOpen, onClose, date, onSuccess,
-}: {
-  label: string; value: number; goal: number; color: string
-  metric: MetricType; activeCard: MetricType | null
-  onOpen: (m: MetricType) => void; onClose: () => void
-  date: string; onSuccess: () => void
-}) {
-  const pct = Math.min(100, goal > 0 ? (value / goal) * 100 : 0)
-  const isOpen = activeCard === metric
-
-  return (
-    <div>
-      <button
-        onClick={() => isOpen ? onClose() : onOpen(metric)}
-        className="w-full text-left group"
-      >
-        <div className="flex justify-between items-center mb-1">
-          <span className="text-sm font-semibold group-hover:text-lime transition-colors">{label}</span>
-          <span className="text-xs text-gray-400">{Math.round(value)} / {goal}</span>
-        </div>
-        <div className="h-2.5 rounded-full overflow-hidden bg-elevated">
-          <div className="h-full rounded-full transition-all duration-500"
-            style={{ width: `${pct}%`, backgroundColor: color }} />
-        </div>
-      </button>
-      {isOpen && (
-        <InlineLogForm metric={metric} date={date} onSuccess={onSuccess} onClose={onClose} />
-      )}
-    </div>
-  )
-}
 
 /* ─── MetricTile ──────────────────────────────────────────────────────────── */
 function MetricTile({ label, value, sub, color }: {
@@ -269,25 +237,12 @@ export default function DashboardPage() {
             </div>
           </Card>
 
-          {/* Activity — each row tappable */}
-          <Card className="space-y-4">
-            <h2 className="text-base font-bold">Activity</h2>
-            <ActivityRow
-              label="Water" value={totals.water} goal={goals.water_goal} color="var(--color-info)"
-              metric="water" activeCard={activeCard} onOpen={openCard} onClose={closeCard}
-              date={date} onSuccess={invalidate}
-            />
-            <ActivityRow
-              label="Steps" value={totals.steps} goal={goals.step_goal} color="var(--color-lime)"
-              metric="steps" activeCard={activeCard} onOpen={openCard} onClose={closeCard}
-              date={date} onSuccess={invalidate}
-            />
-            <ActivityRow
-              label="Sleep" value={totals.sleep} goal={goals.sleep_goal} color="var(--color-accent)"
-              metric="sleep" activeCard={activeCard} onOpen={openCard} onClose={closeCard}
-              date={date} onSuccess={invalidate}
-            />
-          </Card>
+          {/* Activity — flip blocks */}
+          <div className="grid grid-cols-3 gap-3">
+            <FlipMetricBlock metric="water" value={totals.water} goal={goals.water_goal} date={date} onSuccess={invalidate} />
+            <FlipMetricBlock metric="steps" value={totals.steps} goal={goals.step_goal}  date={date} onSuccess={invalidate} />
+            <FlipMetricBlock metric="sleep" value={totals.sleep} goal={goals.sleep_goal} date={date} onSuccess={invalidate} />
+          </div>
 
           {/* Trend charts */}
           <div className="grid grid-cols-2 gap-4">
