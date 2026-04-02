@@ -131,10 +131,19 @@ export default function DashboardPage() {
         {/* ── LEFT ────────────────────────────────────────────────────────── */}
         <div className="grid grid-cols-2 gap-4 content-start">
 
-          {/* Calorie Intake */}
-          <Card>
-            <CalorieBlock kind="intake" value={totals.calories} goal={goals.calorie_goal} date={date} onSuccess={invalidate} />
-          </Card>
+          {/* Calorie Intake — opens Food sheet */}
+          <LoggableCard metric="food" activeCard={activeCard} onOpen={openCard} onClose={closeCard}>
+            <div className="flex flex-col items-center justify-center text-center min-h-[120px]">
+              <p className="text-xs text-gray-400 mb-2 font-semibold uppercase tracking-wide">Intake</p>
+              <div className="relative">
+                <RingChart value={totals.calories} goal={goals.calorie_goal} color="#C7FF41" size={110} />
+                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                  <span className="text-xl font-bold text-lime">{Math.round(totals.calories)}</span>
+                  <span className="text-xs text-gray-400">/ {goals.calorie_goal}</span>
+                </div>
+              </div>
+            </div>
+          </LoggableCard>
 
           {/* Calories Burnt */}
           <Card>
