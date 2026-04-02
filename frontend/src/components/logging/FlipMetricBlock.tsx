@@ -62,6 +62,9 @@ export default function FlipMetricBlock({ metric, value, goal, date, onSuccess }
   const Icon = cfg.icon
   const pct  = Math.min(100, goal > 0 ? (value / goal) * 100 : 0)
 
+  // For sleep, cap new entries so the daily total never exceeds 24 hrs
+  const effectiveMax = cfg.max !== undefined ? Math.max(0, cfg.max - value) : Infinity
+
   // Fetch today's entries (shared cache with TodaysLog / LogPage)
   const { data: entriesData } = useQuery<Record<string, Record<string, unknown>[]>>({
     queryKey: ['entries', date],
@@ -106,7 +109,7 @@ export default function FlipMetricBlock({ metric, value, goal, date, onSuccess }
 
   function commitCustom() {
     const v = parseFloat(inputVal)
-    if (!isNaN(v) && v > 0) setAmount(Math.min(cfg.max ?? Infinity, v))
+    if (!isNaN(v) && v > 0) setAmount(Math.min(effectiveMax, v))
     setEditing(false)
   }
 
@@ -182,7 +185,7 @@ export default function FlipMetricBlock({ metric, value, goal, date, onSuccess }
               </button>
             )}
             <button
-              onClick={() => setAmount(a => Math.min(cfg.max ?? Infinity, parseFloat((a + cfg.step).toFixed(2))))}
+              onClick={() => setAmount(a => Math.min(effectiveMax, parseFloat((a + cfg.step).toFixed(2))))}
               className="w-7 h-7 rounded-full bg-elevated flex items-center justify-center hover:bg-[#3A3A3A] transition-colors"
             >
               <Plus size={13} />
@@ -195,7 +198,7 @@ export default function FlipMetricBlock({ metric, value, goal, date, onSuccess }
               className="flex-1 py-1.5 rounded-xl text-xs font-semibold bg-elevated text-gray-400 hover:text-white transition-colors">
               Cancel
             </button>
-            <button onClick={handleLog} disabled={logMut.isPending}
+            <button onClick={handleLog} disabled={logMut.isPending || effectiveMax <= 0}
               className="flex-1 py-1.5 rounded-xl text-xs font-bold bg-lime text-black hover:brightness-110
                          transition-all disabled:opacity-50 flex items-center justify-center gap-1">
               <Check size={12} /> Log
