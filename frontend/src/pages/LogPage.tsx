@@ -56,12 +56,12 @@ export default function LogPage() {
   })
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold mb-4">Log</h1>
+    <div className="max-w-2xl mx-auto">
+      <h1 className="text-2xl font-bold mb-6">Log</h1>
       <WeekSelector selectedDate={date} onSelect={setDate} />
 
-      {/* Tab bar — pill style */}
-      <div className="flex gap-2 mb-6 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
+      {/* Tab bar — pill style, centered */}
+      <div className="flex justify-center gap-2 mb-6 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
         {TABS.map(t => (
           <button
             key={t.key}
@@ -202,7 +202,7 @@ function FoodForm({ date, onSuccess }: { date: string; onSuccess: () => void }) 
             value={f.sugar} onChange={e => setF(p => ({ ...p, sugar: e.target.value }))} min="0" />
         </Field>
       </div>
-      <Button type="submit" loading={loading}>Log Food</Button>
+      <div className="flex justify-center"><Button type="submit" loading={loading}>Log Food</Button></div>
     </form>
   )
 }
@@ -230,7 +230,7 @@ function WaterForm({ date, onSuccess }: { date: string; onSuccess: () => void })
         <input type="number" placeholder="250"
           value={amount} onChange={e => setAmount(e.target.value)} required min="0" />
       </Field>
-      <Button type="submit" loading={loading}>Log Water</Button>
+      <div className="flex justify-center"><Button type="submit" loading={loading}>Log Water</Button></div>
     </form>
   )
 }
@@ -277,7 +277,7 @@ function WeightForm({ date, onSuccess }: { date: string; onSuccess: () => void }
         <input type="number" placeholder="0"
           value={weight} onChange={e => setWeight(e.target.value)} required min="0" step="0.1" />
       </Field>
-      <Button type="submit" loading={loading}>Log Weight</Button>
+      <div className="flex justify-center"><Button type="submit" loading={loading}>Log Weight</Button></div>
     </form>
   )
 }
@@ -305,7 +305,7 @@ function StepsForm({ date, onSuccess }: { date: string; onSuccess: () => void })
         <input type="number" placeholder="0"
           value={steps} onChange={e => setSteps(e.target.value)} required min="0" />
       </Field>
-      <Button type="submit" loading={loading}>Log Steps</Button>
+      <div className="flex justify-center"><Button type="submit" loading={loading}>Log Steps</Button></div>
     </form>
   )
 }
@@ -335,7 +335,7 @@ function SleepForm({ date, onSuccess }: { date: string; onSuccess: () => void })
       <Field label="Wake Time">
         <input type="time" value={wakeTime} onChange={e => setWakeTime(e.target.value)} />
       </Field>
-      <Button type="submit" loading={loading}>Log Sleep</Button>
+      <div className="flex justify-center"><Button type="submit" loading={loading}>Log Sleep</Button></div>
     </form>
   )
 }
@@ -363,7 +363,7 @@ function CaloriesBurntForm({ date, onSuccess }: { date: string; onSuccess: () =>
         <input type="number" placeholder="0"
           value={calories} onChange={e => setCalories(e.target.value)} required min="0" />
       </Field>
-      <Button type="submit" loading={loading}>Log Calories Burnt</Button>
+      <div className="flex justify-center"><Button type="submit" loading={loading}>Log Calories Burnt</Button></div>
     </form>
   )
 }

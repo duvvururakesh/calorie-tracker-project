@@ -117,11 +117,10 @@ export default function DashboardPage() {
   return (
     <div>
       {/* Page header */}
-      <div className="flex items-baseline justify-between mb-4">
-        <h1 className="text-2xl font-bold">Dashboard</h1>
-        <p className="text-sm text-gray-400">
-          Welcome, <span className="text-white font-semibold">{user?.profile_name || user?.username}</span>
-        </p>
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold">
+          Welcome, <span className="text-lime">{user?.profile_name || user?.username}</span>
+        </h1>
       </div>
 
       <WeekSelector selectedDate={date} onSelect={setDate} />
