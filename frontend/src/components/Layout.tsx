@@ -40,14 +40,19 @@ export default function Layout() {
 
         {/* Nav */}
         <nav className="flex items-center gap-5 text-sm font-semibold">
-          <NavLink
-            to="/dashboard"
-            className={({ isActive }) =>
-              isActive ? 'text-lime font-bold' : 'text-gray-400 hover:text-white transition-colors'
-            }
-          >
-            Home
-          </NavLink>
+          {[
+            { to: '/dashboard', label: 'Home' },
+            { to: '/log',       label: 'Log' },
+            { to: '/goals',     label: 'Goals' },
+          ].map(({ to, label }) => (
+            <NavLink key={to} to={to}
+              className={({ isActive }) =>
+                isActive ? 'text-lime font-bold' : 'text-gray-400 hover:text-white transition-colors'
+              }
+            >
+              {label}
+            </NavLink>
+          ))}
 
           {/* Profile dropdown */}
           <div className="relative" ref={menuRef}>
@@ -65,8 +70,6 @@ export default function Layout() {
                 style={{ boxShadow: '0 4px 20px rgba(0,0,0,0.5)' }}
               >
                 {[
-                  { to: '/log',      label: 'Log' },
-                  { to: '/goals',    label: 'Goals' },
                   { to: '/settings', label: 'Settings' },
                 ].map(({ to, label }) => (
                   <NavLink

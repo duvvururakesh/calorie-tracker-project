@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Plus } from 'lucide-react'
 import FlipMetricBlock from '@/components/logging/FlipMetricBlock'
+import CalorieBlock from '@/components/logging/CalorieBlock'
 import {
   LineChart, Line, BarChart, Bar,
   XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
@@ -130,36 +131,15 @@ export default function DashboardPage() {
         {/* ── LEFT ────────────────────────────────────────────────────────── */}
         <div className="grid grid-cols-2 gap-4 content-start">
 
-          {/* Calorie Intake — opens Food sheet */}
-          <LoggableCard metric="food" activeCard={activeCard} onOpen={openCard} onClose={closeCard}>
-            <div className="flex flex-col items-center justify-center text-center min-h-[120px]">
-              <p className="text-xs text-gray-400 mb-2 font-semibold uppercase tracking-wide">Intake</p>
-              <div className="relative">
-                <RingChart value={totals.calories} goal={goals.calorie_goal} color="#C7FF41" size={110} />
-                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                  <span className="text-xl font-bold text-lime">{Math.round(totals.calories)}</span>
-                  <span className="text-xs text-gray-400">/ {goals.calorie_goal}</span>
-                </div>
-              </div>
-            </div>
-          </LoggableCard>
+          {/* Calorie Intake */}
+          <Card>
+            <CalorieBlock kind="intake" value={totals.calories} goal={goals.calorie_goal} date={date} onSuccess={invalidate} />
+          </Card>
 
-          {/* Calories Burnt — inline form */}
-          <LoggableCard metric="burnt" activeCard={activeCard} onOpen={openCard} onClose={closeCard}>
-            <div className="flex flex-col items-center justify-center text-center min-h-[120px]">
-              <p className="text-xs text-gray-400 mb-2 font-semibold uppercase tracking-wide">Burnt</p>
-              <div className="relative">
-                <RingChart value={totals.calories_burnt} goal={goals.calories_burnt_goal} color="#A970FF" size={110} />
-                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                  <span className="text-xl font-bold text-accent">{Math.round(totals.calories_burnt)}</span>
-                  <span className="text-xs text-gray-400">/ {goals.calories_burnt_goal}</span>
-                </div>
-              </div>
-            </div>
-            {activeCard === 'burnt' && (
-              <InlineLogForm metric="burnt" date={date} onSuccess={invalidate} onClose={closeCard} />
-            )}
-          </LoggableCard>
+          {/* Calories Burnt */}
+          <Card>
+            <CalorieBlock kind="burnt" value={totals.calories_burnt} goal={goals.calories_burnt_goal} date={date} onSuccess={invalidate} />
+          </Card>
 
           {/* BMI — read-only */}
           <Card className="min-h-[90px]">
