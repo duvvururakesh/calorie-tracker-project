@@ -18,7 +18,7 @@ export default function Button({
   return (
     <button
       disabled={disabled || loading}
-      className={`${fullWidth ? 'w-full' : ''} py-3 rounded-xl font-bold bg-lime text-black
+      className={`${fullWidth ? 'w-full' : ''} min-h-12 px-4 py-3 rounded-full font-bold bg-lime text-black
         hover:brightness-110 transition-all
         disabled:opacity-60 disabled:cursor-not-allowed
         ${className}`}

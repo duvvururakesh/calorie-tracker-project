@@ -27,9 +27,16 @@ export default function WeekSelector({ selectedDate, onSelect }: Props) {
   const [viewAnchor, setViewAnchor] = useState(selectedDate)
   const days = getWeekDates(viewAnchor)
   const today = toISO(new Date())
+  const nextWeekAnchor = (() => {
+    const d = new Date(viewAnchor + 'T12:00:00')
+    d.setDate(d.getDate() + 7)
+    return toISO(d)
+  })()
+  const nextWeekStartsInFuture = toISO(getWeekDates(nextWeekAnchor)[0]) > today
 
   // If selectedDate moves outside the visible week (e.g. set externally), follow it
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setViewAnchor(current => {
       const visible = getWeekDates(current).map(d => toISO(d))
       return visible.includes(selectedDate) ? current : selectedDate
@@ -43,26 +50,34 @@ export default function WeekSelector({ selectedDate, onSelect }: Props) {
   }
 
   return (
-    <div className="flex justify-between items-center mb-6 p-2 rounded-2xl bg-surface shadow-[0_2px_6px_rgba(0,0,0,0.4)]">
+    <div className="flex justify-between items-center mb-2 sm:mb-6 p-1 rounded-xl bg-surface border border-white/8 min-w-0">
       <button
         onClick={() => shiftWeek(-7)}
         aria-label="Previous week"
-        className="p-2 rounded-full hover:bg-elevated transition-colors text-gray-400 hover:text-white flex-shrink-0"
+        className="w-11 h-11 rounded-lg hover:bg-elevated transition-colors text-gray-400 hover:text-white flex-shrink-0 flex items-center justify-center"
       >
         <ChevronLeft size={16} />
       </button>
 
-      <div className="flex-1 flex justify-between mx-2 overflow-x-auto gap-1">
+      <div className="flex-1 flex gap-1 mx-1 overflow-x-auto no-scrollbar min-w-0">
         {days.map(d => {
           const iso = toISO(d)
           const isSelected = iso === selectedDate
           const isToday = iso === today
+          const isFuture = iso > today
           return (
             <button
               key={iso}
-              onClick={() => onSelect(iso)}
-              className={`flex-1 flex flex-col items-center py-2 px-1 rounded-full transition-all min-w-[40px] ${
-                isSelected ? 'bg-lime text-black font-bold' : 'bg-elevated text-white/70'
+              onClick={() => {
+                if (!isFuture) onSelect(iso)
+              }}
+              disabled={isFuture}
+              className={`min-h-12 min-w-11 flex flex-col items-center justify-center py-1.5 px-0.5 rounded-lg transition-colors ${
+                isFuture
+                  ? 'text-gray-700 cursor-not-allowed'
+                  : isSelected
+                    ? 'bg-lime text-black font-bold'
+                    : 'text-white/70 hover:bg-elevated'
               }`}
             >
               <span className={`text-[10px] font-normal leading-tight ${isSelected ? 'opacity-50' : 'text-gray-500'}`}>
@@ -82,7 +97,8 @@ export default function WeekSelector({ selectedDate, onSelect }: Props) {
       <button
         onClick={() => shiftWeek(7)}
         aria-label="Next week"
-        className="p-2 rounded-full hover:bg-elevated transition-colors text-gray-400 hover:text-white flex-shrink-0"
+        disabled={nextWeekStartsInFuture}
+        className="w-11 h-11 rounded-lg hover:bg-elevated transition-colors text-gray-400 hover:text-white flex-shrink-0 flex items-center justify-center disabled:text-gray-700 disabled:hover:bg-transparent disabled:cursor-not-allowed"
       >
         <ChevronRight size={16} />
       </button>

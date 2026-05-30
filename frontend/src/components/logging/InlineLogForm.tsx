@@ -20,7 +20,7 @@ export default function InlineLogForm({ metric, date, onSuccess, onClose }: Prop
       <button
         type="button"
         onClick={onClose}
-        className="text-xs text-gray-500 hover:text-gray-300 transition-colors mt-2"
+        className="min-h-11 px-3 text-xs text-gray-500 hover:text-gray-300 transition-colors mt-2"
       >
         Close
       </button>
@@ -42,7 +42,7 @@ function WaterInline({ date, onSuccess }: { date: string; onSuccess: () => void 
             type="button"
             onClick={() => mut.mutate({ amount_ml: ml })}
             disabled={mut.isPending}
-            className="px-3 py-1.5 rounded-lg bg-elevated text-sm font-semibold text-info
+            className="min-h-11 px-3 py-2 rounded-lg bg-elevated text-sm font-semibold text-info
               hover:bg-info/20 transition-colors disabled:opacity-50"
           >
             +{ml}ml
@@ -52,7 +52,7 @@ function WaterInline({ date, onSuccess }: { date: string; onSuccess: () => void 
       <div className="flex gap-2">
         <input type="number" placeholder="Custom ml" value={amount}
           onChange={e => setAmount(e.target.value)} min="0"
-          className="!py-1.5 !text-sm !rounded-lg flex-1" />
+          className="!py-2 !text-base !rounded-lg flex-1 min-w-0" />
         <SubmitIcon onClick={() => { if (amount) mut.mutate({ amount_ml: Number(amount) }) }}
           disabled={!amount || mut.isPending} />
       </div>
@@ -71,7 +71,7 @@ function WeightInline({ date, onSuccess }: { date: string; onSuccess: () => void
       <div className="flex gap-2">
         {(['kg', 'lbs'] as const).map(u => (
           <button key={u} type="button" onClick={() => setUnit(u)}
-            className="flex-1 py-1.5 rounded-lg font-semibold text-xs transition-all"
+            className="flex-1 min-h-11 py-2 rounded-lg font-semibold text-xs transition-all"
             style={unit === u
               ? { backgroundColor: 'var(--color-lime)', color: '#000' }
               : { backgroundColor: 'var(--color-elevated)', color: '#ccc' }}>
@@ -82,7 +82,7 @@ function WeightInline({ date, onSuccess }: { date: string; onSuccess: () => void
       <div className="flex gap-2">
         <input type="number" placeholder={`Weight (${unit})`} value={value}
           onChange={e => setValue(e.target.value)} min="0" step="0.1"
-          className="!py-1.5 !text-sm !rounded-lg flex-1" />
+          className="!py-2 !text-base !rounded-lg flex-1 min-w-0" />
         <SubmitIcon onClick={() => { if (value) mut.mutate({ weight_kg: Number(value), unit }) }}
           disabled={!value || mut.isPending} />
       </div>
@@ -101,7 +101,7 @@ function SimpleInline({ date, onSuccess, type, field, placeholder }: {
     <div className="flex gap-2">
       <input type="number" placeholder={placeholder} value={value}
         onChange={e => setValue(e.target.value)} min="0"
-        className="!py-1.5 !text-sm !rounded-lg flex-1" autoFocus />
+        className="!py-2 !text-base !rounded-lg flex-1 min-w-0" autoFocus />
       <SubmitIcon onClick={() => { if (value) mut.mutate({ [field]: Number(value) }) }}
         disabled={!value || mut.isPending} />
     </div>
@@ -128,16 +128,16 @@ function SleepInline({ date, onSuccess }: { date: string; onSuccess: () => void 
         <div>
           <p className="text-[10px] text-gray-500 mb-1 uppercase tracking-wide">Sleep</p>
           <input type="time" value={sleepTime} onChange={e => setSleepTime(e.target.value)}
-            className="!py-1.5 !text-sm !rounded-lg w-full" />
+            className="!py-2 !text-base !rounded-lg w-full" />
         </div>
         <div>
           <p className="text-[10px] text-gray-500 mb-1 uppercase tracking-wide">Wake</p>
           <input type="time" value={wakeTime} onChange={e => setWakeTime(e.target.value)}
-            className="!py-1.5 !text-sm !rounded-lg w-full" />
+            className="!py-2 !text-base !rounded-lg w-full" />
         </div>
       </div>
       <div className="flex items-center justify-between">
-        <span className="text-sm text-gray-400">Duration: <span className="font-bold text-accent">{duration} hrs</span></span>
+        <span className="text-sm text-gray-400 min-w-0">Duration: <span className="font-bold text-accent">{duration} hrs</span></span>
         <SubmitIcon onClick={() => mut.mutate({ sleep_time: sleepTime, wake_time: wakeTime })}
           disabled={mut.isPending} />
       </div>
@@ -149,7 +149,8 @@ function SleepInline({ date, onSuccess }: { date: string; onSuccess: () => void 
 function SubmitIcon({ onClick, disabled }: { onClick: () => void; disabled: boolean }) {
   return (
     <button type="button" onClick={onClick} disabled={disabled}
-      className="p-1.5 rounded-lg bg-lime text-black disabled:opacity-40 flex-shrink-0 hover:brightness-110 transition-all">
+      aria-label="Save entry"
+      className="w-11 h-11 rounded-lg bg-lime text-black disabled:opacity-40 flex-shrink-0 hover:brightness-110 transition-all flex items-center justify-center">
       <Check size={16} />
     </button>
   )

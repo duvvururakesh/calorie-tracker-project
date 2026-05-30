@@ -34,14 +34,16 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 bg-bg">
-      <div className="w-full max-w-sm p-8 rounded-2xl bg-surface">
-        <h1 className="text-3xl font-bold text-center mb-8">Create Account</h1>
+    <div className="min-h-svh flex items-center justify-center px-4 py-8 safe-top safe-bottom bg-bg">
+      <div className="w-full max-w-sm p-5 sm:p-8 rounded-2xl bg-surface">
+        <h1 className="text-2xl sm:text-3xl font-bold text-center mb-7 sm:mb-8">Create Account</h1>
         <Alert message={error} type="error" />
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm text-gray-400 mb-1">Username</label>
+            <label htmlFor="signup-username" className="block text-sm text-gray-400 mb-1">Username</label>
             <input
+              id="signup-username"
+              name="username"
               type="text"
               placeholder="your_username"
               value={username}
@@ -50,8 +52,10 @@ export default function SignupPage() {
             />
           </div>
           <div>
-            <label className="block text-sm text-gray-400 mb-1">Email</label>
+            <label htmlFor="signup-email" className="block text-sm text-gray-400 mb-1">Email</label>
             <input
+              id="signup-email"
+              name="email"
               type="email"
               placeholder="you@example.com"
               value={email}
@@ -60,8 +64,10 @@ export default function SignupPage() {
             />
           </div>
           <div>
-            <label className="block text-sm text-gray-400 mb-1">Password</label>
+            <label htmlFor="signup-password" className="block text-sm text-gray-400 mb-1">Password</label>
             <input
+              id="signup-password"
+              name="password"
               type="password"
               placeholder="••••••••"
               value={password}
@@ -70,8 +76,10 @@ export default function SignupPage() {
             />
           </div>
           <div>
-            <label className="block text-sm text-gray-400 mb-1">Confirm Password</label>
+            <label htmlFor="signup-confirm-password" className="block text-sm text-gray-400 mb-1">Confirm Password</label>
             <input
+              id="signup-confirm-password"
+              name="confirm-password"
               type="password"
               placeholder="••••••••"
               value={confirm}

@@ -22,11 +22,12 @@ export default function RingChart({ value, goal, color, size = 120 }: Props) {
         dataKey="v"
         cx="50%"
         cy="50%"
-        innerRadius={size * 0.35}
-        outerRadius={size * 0.46}
+        innerRadius={size * 0.32}
+        outerRadius={size * 0.48}
         startAngle={90}
         endAngle={-270}
         strokeWidth={0}
+        cornerRadius={size * 0.08}
       >
         <Cell fill={over > 0 ? 'var(--color-danger)' : color} />
         <Cell fill="var(--color-elevated)" />

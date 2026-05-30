@@ -55,15 +55,15 @@ export default function BottomSheet({ isOpen, onClose, title, children }: Props)
     <div className="fixed inset-0 z-50 flex items-end justify-center">
       {/* Overlay */}
       <div
-        className="absolute inset-0 bg-black/60 animate-[fadeIn_200ms_ease-out]"
+        className="absolute inset-0 bg-black/60"
         onClick={onClose}
       />
 
       {/* Sheet */}
       <div
         ref={sheetRef}
-        className="relative z-10 w-full max-w-lg bg-surface rounded-t-2xl max-h-[85vh] overflow-y-auto
-                   animate-[slideUp_300ms_ease-out]"
+        className="relative z-10 w-full max-w-lg bg-surface rounded-t-2xl max-h-[90svh] overflow-y-auto overscroll-contain
+                   safe-bottom"
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
@@ -74,18 +74,19 @@ export default function BottomSheet({ isOpen, onClose, title, children }: Props)
         </div>
 
         {/* Header */}
-        <div className="flex justify-between items-center px-5 pb-3">
+        <div className="flex justify-between items-center px-4 sm:px-5 pb-3">
           <h2 className="text-lg font-bold">{title}</h2>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg hover:bg-elevated transition-colors text-gray-400 hover:text-white"
+            className="w-11 h-11 rounded-lg hover:bg-elevated transition-colors text-gray-400 hover:text-white flex items-center justify-center"
+            aria-label="Close sheet"
           >
             <X size={18} />
           </button>
         </div>
 
         {/* Content */}
-        <div className="px-5 pb-6">
+        <div className="px-4 sm:px-5 pb-6">
           {children}
         </div>
       </div>

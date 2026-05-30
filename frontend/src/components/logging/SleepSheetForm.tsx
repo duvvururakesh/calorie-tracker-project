@@ -40,12 +40,12 @@ export default function SleepSheetForm({ date, onSuccess }: Props) {
       {saved && <Alert message={saved} type="success" />}
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-sm text-gray-400 mb-1">Sleep Time</label>
-          <input type="time" value={sleepTime} onChange={e => setSleepTime(e.target.value)} />
+          <label htmlFor="sleep-time" className="block text-sm text-gray-400 mb-1">Sleep Time</label>
+          <input id="sleep-time" name="sleep_time" type="time" value={sleepTime} onChange={e => setSleepTime(e.target.value)} />
         </div>
         <div>
-          <label className="block text-sm text-gray-400 mb-1">Wake Time</label>
-          <input type="time" value={wakeTime} onChange={e => setWakeTime(e.target.value)} />
+          <label htmlFor="wake-time" className="block text-sm text-gray-400 mb-1">Wake Time</label>
+          <input id="wake-time" name="wake_time" type="time" value={wakeTime} onChange={e => setWakeTime(e.target.value)} />
         </div>
       </div>
       <div className="text-center py-2">

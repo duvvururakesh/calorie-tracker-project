@@ -83,3 +83,21 @@ class CaloriesBurntEntry(db.Model):
     date = db.Column(db.Date, nullable=False)
     calories_burnt = db.Column(db.Integer, nullable=False)
     user = db.relationship('User', backref=db.backref('calories_burnt_entries', lazy=True, cascade='all, delete-orphan'))
+
+class ChatMessage(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    role = db.Column(db.String(20), nullable=False)
+    content = db.Column(db.Text, nullable=False)
+    intent = db.Column(db.String(50), nullable=True)
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    user = db.relationship('User', backref=db.backref('chat_messages', lazy=True, cascade='all, delete-orphan'))
+
+class UserMemory(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    key = db.Column(db.String(80), nullable=False)
+    value = db.Column(db.Text, nullable=False)
+    updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+    user = db.relationship('User', backref=db.backref('memories', lazy=True, cascade='all, delete-orphan'))
+    __table_args__ = (db.UniqueConstraint('user_id', 'key', name='uq_user_memory_key'),)

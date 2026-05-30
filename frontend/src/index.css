@@ -1,27 +1,47 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;600;700&display=swap');
-
 @import "tailwindcss";
 
 /* ─── Design Tokens ──────────────────────────────────────────────────────── */
 @theme {
-  --color-bg:       #121212;
-  --color-surface:  #1E1E1E;
-  --color-elevated: #2A2A2A;
-  --color-lime:     #C7FF41;
-  --color-danger:   #FF375F;
-  --color-info:     #5BEAFF;
+  --color-bg:       #000000;
+  --color-surface:  #1C1C1E;
+  --color-elevated: #2D2D30;
+  --color-lime:     #A7FC00;
+  --color-danger:   #FF0A54;
+  --color-info:     #32DDE8;
   --color-warn:     #FFD60A;
-  --color-accent:   #A970FF;
+  --color-accent:   #BF5AF2;
+  --color-move:     #FF0A54;
+  --color-exercise: #A7FC00;
+  --color-stand:    #32DDE8;
 }
 
 @layer base {
   * { box-sizing: border-box; margin: 0; padding: 0; }
 
+  html {
+    min-height: 100%;
+    overflow-x: hidden;
+    color-scheme: dark;
+    scroll-padding-bottom: calc(7rem + env(safe-area-inset-bottom));
+    text-size-adjust: 100%;
+    -webkit-text-size-adjust: 100%;
+  }
+
   body {
     background-color: var(--color-bg);
-    color: #fff;
-    font-family: 'Inter Tight', sans-serif;
+    color: #F2F2F7;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
     -webkit-font-smoothing: antialiased;
+    min-height: 100svh;
+    overflow-x: hidden;
+    overscroll-behavior-y: none;
+    scroll-padding-bottom: calc(7rem + env(safe-area-inset-bottom));
+    touch-action: manipulation;
+  }
+
+  #root {
+    min-height: 100svh;
+    overflow-x: clip;
   }
 
   /* ─── Scrollbar ──────────────────────────────────────────────────────── */
@@ -33,29 +53,69 @@
   /* ─── Form Controls ──────────────────────────────────────────────────── */
   input[type="text"], input[type="email"], input[type="password"],
   input[type="number"], input[type="date"], input[type="time"], select, textarea {
-    background-color: var(--color-elevated);
-    border: none;
-    color: #fff;
-    border-radius: 0.75rem;
-    padding: 0.75rem;
+    background-color: rgba(45,45,48,0.96);
+    border: 1px solid rgba(255,255,255,0.08);
+    color: #F2F2F7;
+    border-radius: 0.875rem;
+    min-height: 48px;
+    padding: 0.8125rem 0.875rem;
     width: 100%;
     outline: none;
-    font-family: 'Inter Tight', sans-serif;
-    font-size: 0.95rem;
-    transition: box-shadow 0.2s, background-color 0.2s;
+    font-family: inherit;
+    font-size: 16px;
+    line-height: 1.25;
+    transition: border-color 0.2s, box-shadow 0.2s, background-color 0.2s;
+    -webkit-appearance: none;
+    appearance: none;
+    scroll-margin-bottom: calc(7rem + env(safe-area-inset-bottom));
   }
   input:focus, select:focus, textarea:focus {
-    background-color: #333;
-    box-shadow: 0 0 0 2px var(--color-lime);
+    background-color: #3A3A3C;
+    border-color: rgba(167,252,0,0.8);
+    box-shadow: 0 0 0 3px rgba(167,252,0,0.16);
   }
-  input::placeholder { color: #666; }
+  input::placeholder { color: #8E8E93; }
   select option { background: var(--color-surface); }
 
   /* ─── Button Focus ───────────────────────────────────────────────────── */
   button:focus-visible {
-    outline: 2px solid var(--color-lime);
+    outline: 2px solid var(--color-exercise);
     outline-offset: 2px;
     border-radius: 0.5rem;
+  }
+
+  button, a {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  button {
+    touch-action: manipulation;
+  }
+
+  label {
+    letter-spacing: 0;
+  }
+}
+
+@layer utilities {
+  .safe-top {
+    padding-top: max(env(safe-area-inset-top), 0px);
+  }
+
+  .safe-bottom {
+    padding-bottom: max(env(safe-area-inset-bottom), 0px);
+  }
+
+  .pb-mobile-nav {
+    padding-bottom: calc(5.25rem + env(safe-area-inset-bottom));
+  }
+
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
   }
 }
 

@@ -27,15 +27,15 @@ const CONFIG: Record<Metric, {
 }> = {
   water: {
     label: 'Water', unit: 'ml',
-    icon: Droplets, color: 'var(--color-info)',
+    icon: Droplets, color: 'var(--color-stand)',
     step: 250, field: 'amount_ml', apiType: 'water', entryKey: 'water',
-    format: v => v >= 1000 ? `${(v / 1000).toFixed(1)}L` : `${Math.round(v)}`,
+    format: v => v >= 1000 ? `${(v / 1000).toFixed(1)}L` : `${Math.round(v)}ml`,
   },
   steps: {
     label: 'Steps', unit: 'steps',
-    icon: Footprints, color: 'var(--color-lime)',
+    icon: Footprints, color: 'var(--color-exercise)',
     step: 500, field: 'steps', apiType: 'steps', entryKey: 'steps',
-    format: v => v >= 1000 ? `${(v / 1000).toFixed(1)}k` : `${Math.round(v)}`,
+    format: v => v >= 1000 ? `${Number((v / 1000).toFixed(1))}k` : `${Math.round(v)}`,
   },
   sleep: {
     label: 'Sleep', unit: 'hrs',
@@ -93,36 +93,38 @@ export default function FlipMetricBlock({ metric, value, goal, date, onSuccess }
 
   return (
     <div
-      className="rounded-2xl bg-surface flex flex-col items-center justify-center gap-2 py-4 px-2 relative"
-      style={{ boxShadow: '0 2px 6px rgba(0,0,0,0.3)', minHeight: '140px' }}
+      className="rounded-[1.25rem] bg-surface/95 border border-white/10 flex flex-col items-center justify-center gap-2 py-4 px-1.5 sm:px-2 relative min-w-0"
+      style={{ minHeight: '140px' }}
     >
       {/* Progress bar */}
-      <div className="absolute top-0 left-0 right-0 h-1 rounded-t-2xl overflow-hidden bg-elevated">
-        <div className="h-full rounded-tl-2xl transition-all duration-500"
+      <div className="absolute top-0 left-0 right-0 h-1 rounded-t-xl overflow-hidden bg-elevated">
+        <div className="h-full transition-all duration-500"
           style={{ width: `${pct}%`, backgroundColor: cfg.color }} />
       </div>
 
       <Icon size={18} style={{ color: cfg.color }} className="opacity-70" />
 
       {/* Value + +/- on same line */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-1.5 sm:gap-3 min-w-0">
         <button
           onClick={() => lastEntry && delMut.mutate(lastEntry.id as number)}
           disabled={busy || entries.length === 0}
-          className="w-7 h-7 rounded-full bg-elevated flex items-center justify-center
+          aria-label={`Remove last ${cfg.label.toLowerCase()} entry`}
+          className="w-11 h-11 md:w-10 md:h-10 rounded-lg bg-elevated flex items-center justify-center
                      hover:bg-[#3A3A3A] transition-colors disabled:opacity-30"
         >
           <Minus size={13} />
         </button>
 
-        <p className="text-2xl font-bold leading-none" style={{ color: cfg.color }}>
+        <p className="text-xl min-[390px]:text-2xl font-bold leading-none tabular-nums" style={{ color: cfg.color }}>
           {cfg.format(value)}
         </p>
 
         <button
           onClick={handleAdd}
           disabled={busy || !canAdd}
-          className="w-7 h-7 rounded-full bg-elevated flex items-center justify-center
+          aria-label={`Add ${cfg.label.toLowerCase()}`}
+          className="w-11 h-11 md:w-10 md:h-10 rounded-lg bg-elevated flex items-center justify-center
                      hover:bg-[#3A3A3A] transition-colors disabled:opacity-30"
         >
           <Plus size={13} />
@@ -130,8 +132,10 @@ export default function FlipMetricBlock({ metric, value, goal, date, onSuccess }
       </div>
 
       <div className="text-center">
-        <p className="text-xs text-gray-500">/ {cfg.format(goal)} {cfg.unit}</p>
-        <p className="text-[10px] text-gray-600 font-semibold uppercase tracking-widest mt-0.5">{cfg.label}</p>
+        <p className="text-[11px] sm:text-xs text-gray-500 leading-tight">
+          / {cfg.format(goal)}{metric === 'water' ? '' : ` ${cfg.unit}`}
+        </p>
+        <p className="text-[11px] text-gray-500 font-semibold mt-0.5">{cfg.label}</p>
       </div>
     </div>
   )

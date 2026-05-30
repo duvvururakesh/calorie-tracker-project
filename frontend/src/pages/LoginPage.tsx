@@ -31,14 +31,16 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 bg-bg">
-      <div className="w-full max-w-sm p-8 rounded-2xl bg-surface">
-        <h1 className="text-3xl font-bold text-center mb-8">Login</h1>
+    <div className="min-h-svh flex items-center justify-center px-4 py-8 safe-top safe-bottom bg-bg">
+      <div className="w-full max-w-sm p-5 sm:p-8 rounded-2xl bg-surface">
+        <h1 className="text-2xl sm:text-3xl font-bold text-center mb-7 sm:mb-8">Login</h1>
         <Alert message={error} type="error" />
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm text-gray-400 mb-1">Email</label>
+            <label htmlFor="login-email" className="block text-sm text-gray-400 mb-1">Email</label>
             <input
+              id="login-email"
+              name="email"
               type="email"
               placeholder="you@example.com"
               value={email}
@@ -47,8 +49,10 @@ export default function LoginPage() {
             />
           </div>
           <div>
-            <label className="block text-sm text-gray-400 mb-1">Password</label>
+            <label htmlFor="login-password" className="block text-sm text-gray-400 mb-1">Password</label>
             <input
+              id="login-password"
+              name="password"
               type="password"
               placeholder="••••••••"
               value={password}

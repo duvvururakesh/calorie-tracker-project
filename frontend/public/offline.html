@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#121212" />
+    <title>Fitit Offline</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        background: #121212;
+        color: #fff;
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      body {
+        min-height: 100svh;
+        display: grid;
+        place-items: center;
+        margin: 0;
+        padding: max(env(safe-area-inset-top), 24px) 24px max(env(safe-area-inset-bottom), 24px);
+      }
+
+      main {
+        max-width: 360px;
+        text-align: center;
+      }
+
+      h1 {
+        font-size: 2rem;
+        margin: 0 0 0.75rem;
+      }
+
+      p {
+        color: #a3a3a3;
+        line-height: 1.5;
+        margin: 0;
+      }
+
+      strong {
+        color: #c7ff41;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Fit<strong>it</strong></h1>
+      <p>You are offline. Previously opened screens can still load from cache, but fresh data needs a connection.</p>
+    </main>
+  </body>
+</html>

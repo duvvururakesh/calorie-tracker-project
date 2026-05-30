@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { cloneElement, isValidElement, useId, useState, useEffect } from 'react'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import api from '@/api/client'
 import Card from '@/components/Card'
@@ -8,10 +8,11 @@ import Alert from '@/components/Alert'
 type TabKey = 'profile' | 'account'
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  const id = useId()
   return (
     <div>
-      <label className="block text-sm text-gray-400 mb-1">{label}</label>
-      {children}
+      <label htmlFor={id} className="block text-sm text-gray-400 mb-1">{label}</label>
+      {isValidElement<{ id?: string }>(children) ? cloneElement(children, { id: children.props.id || id }) : children}
     </div>
   )
 }
@@ -38,6 +39,7 @@ export default function SettingsPage() {
 
   useEffect(() => {
     if (profile) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setP({
         height_cm:     profile.height_cm     || '',
         weight_kg:     profile.weight_kg     || '',
@@ -81,17 +83,19 @@ export default function SettingsPage() {
   ]
 
   return (
-    <div className="max-w-lg mx-auto">
-      <h1 className="text-2xl font-bold mb-6">Settings</h1>
+    <div className="max-w-lg mx-auto min-w-0">
+      <div className="mb-3 sm:mb-6">
+        <p className="text-sm text-gray-400">Profile and account</p>
+        <h1 className="text-2xl sm:text-3xl font-bold">Settings</h1>
+      </div>
 
       <Card>
-        {/* Tab bar — pill style, matching LogPage */}
-        <div className="flex gap-2 mb-6">
+        <div className="flex gap-2 mb-4 sm:mb-6">
           {tabs.map(t => (
             <button
               key={t.key}
               onClick={() => setTab(t.key)}
-              className="flex-1 py-2 rounded-xl font-semibold text-sm transition-all"
+              className="flex-1 min-h-11 py-2 rounded-xl font-semibold text-sm transition-colors"
               style={
                 tab === t.key
                   ? { backgroundColor: 'var(--color-lime)', color: '#000' }
@@ -105,32 +109,32 @@ export default function SettingsPage() {
 
         {/* Profile tab */}
         {tab === 'profile' && (
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             <Field label="Display Name">
-              <input type="text" value={p.profile_name}
+              <input name="profile_name" type="text" value={p.profile_name}
                 onChange={e => setP(v => ({ ...v, profile_name: e.target.value }))} />
             </Field>
             <Field label="Height (cm)">
-              <input type="number" value={p.height_cm}
+              <input name="height_cm" type="number" value={p.height_cm}
                 onChange={e => setP(v => ({ ...v, height_cm: e.target.value }))} min="0" />
             </Field>
             <Field label="Weight (kg)">
-              <input type="number" value={p.weight_kg}
+              <input name="weight_kg" type="number" value={p.weight_kg}
                 onChange={e => setP(v => ({ ...v, weight_kg: e.target.value }))} min="0" step="0.1" />
             </Field>
             <Field label="Date of Birth">
-              <input type="date" value={p.date_of_birth}
+              <input name="date_of_birth" type="date" value={p.date_of_birth}
                 onChange={e => setP(v => ({ ...v, date_of_birth: e.target.value }))} />
             </Field>
             <Field label="Gender">
-              <select value={p.gender} onChange={e => setP(v => ({ ...v, gender: e.target.value }))}>
+              <select name="gender" value={p.gender} onChange={e => setP(v => ({ ...v, gender: e.target.value }))}>
                 <option value="">Select</option>
                 <option value="male">Male</option>
                 <option value="female">Female</option>
               </select>
             </Field>
             <Field label="Activity Level">
-              <select value={p.activity_level}
+              <select name="activity_level" value={p.activity_level}
                 onChange={e => setP(v => ({ ...v, activity_level: e.target.value }))}>
                 <option value="sedentary">Sedentary</option>
                 <option value="light">Light</option>
@@ -148,13 +152,13 @@ export default function SettingsPage() {
 
         {/* Account tab */}
         {tab === 'account' && (
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             <Field label="Username">
-              <input type="text" value={a.username}
+              <input name="username" type="text" value={a.username}
                 onChange={e => setA(v => ({ ...v, username: e.target.value }))} />
             </Field>
             <Field label="Email">
-              <input type="email" value={a.email}
+              <input name="email" type="email" value={a.email}
                 onChange={e => setA(v => ({ ...v, email: e.target.value }))} />
             </Field>
             <hr style={{ borderColor: 'var(--color-elevated)' }} />
@@ -162,17 +166,17 @@ export default function SettingsPage() {
               Change Password
             </p>
             <Field label="Current Password">
-              <input type="password" placeholder="Current password"
+              <input name="current_password" type="password" placeholder="Current password"
                 value={a.current_password}
                 onChange={e => setA(v => ({ ...v, current_password: e.target.value }))} />
             </Field>
             <Field label="New Password">
-              <input type="password" placeholder="New password"
+              <input name="new_password" type="password" placeholder="New password"
                 value={a.new_password}
                 onChange={e => setA(v => ({ ...v, new_password: e.target.value }))} />
             </Field>
             <Field label="Confirm New Password">
-              <input type="password" placeholder="Confirm new password"
+              <input name="confirm_new_password" type="password" placeholder="Confirm new password"
                 value={a.confirm_new_password}
                 onChange={e => setA(v => ({ ...v, confirm_new_password: e.target.value }))} />
             </Field>

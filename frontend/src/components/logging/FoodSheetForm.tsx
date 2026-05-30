@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { cloneElement, isValidElement, useId, useState } from 'react'
 import useLogMutation from '@/hooks/useLogMutation'
 import Button from '@/components/Button'
 import Alert from '@/components/Alert'
@@ -9,10 +9,11 @@ interface Props {
 }
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  const id = useId()
   return (
     <div>
-      <label className="block text-sm text-gray-400 mb-1">{label}</label>
-      {children}
+      <label htmlFor={id} className="block text-sm text-gray-400 mb-1">{label}</label>
+      {isValidElement<{ id?: string }>(children) ? cloneElement(children, { id: children.props.id || id }) : children}
     </div>
   )
 }
@@ -42,7 +43,7 @@ export default function FoodSheetForm({ date, onSuccess }: Props) {
         <input type="text" placeholder="e.g. Chicken Rice Bowl"
           value={f.name} onChange={e => setF(p => ({ ...p, name: e.target.value }))} required />
       </Field>
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 min-[390px]:grid-cols-2 gap-3">
         <Field label="Calories">
           <input type="number" placeholder="0"
             value={f.calories} onChange={e => setF(p => ({ ...p, calories: e.target.value }))} required min="0" />
@@ -52,7 +53,7 @@ export default function FoodSheetForm({ date, onSuccess }: Props) {
         </Field>
       </div>
       <p className="text-xs font-semibold uppercase tracking-widest text-gray-500 pt-1">Macros</p>
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 min-[390px]:grid-cols-2 gap-3">
         <Field label="Protein (g)">
           <input type="number" placeholder="0"
             value={f.protein} onChange={e => setF(p => ({ ...p, protein: e.target.value }))} min="0" />
