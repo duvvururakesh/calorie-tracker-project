@@ -25,7 +25,7 @@ export default function SleepSheetForm({ date, onSuccess }: Props) {
   const duration = useMemo(() => calcDuration(sleepTime, wakeTime), [sleepTime, wakeTime])
 
   const mut = useLogMutation('sleep', date, () => {
-    setSaved(`Logged: ${duration} hrs of sleep`)
+    setSaved(`Added ${duration} hrs of sleep`)
     onSuccess()
     setTimeout(() => setSaved(''), 2500)
   })
@@ -40,11 +40,11 @@ export default function SleepSheetForm({ date, onSuccess }: Props) {
       {saved && <Alert message={saved} type="success" />}
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label htmlFor="sleep-time" className="block text-sm text-gray-400 mb-1">Sleep Time</label>
+          <label htmlFor="sleep-time" className="block text-sm text-gray-400 mb-1">Sleep time</label>
           <input id="sleep-time" name="sleep_time" type="time" value={sleepTime} onChange={e => setSleepTime(e.target.value)} />
         </div>
         <div>
-          <label htmlFor="wake-time" className="block text-sm text-gray-400 mb-1">Wake Time</label>
+          <label htmlFor="wake-time" className="block text-sm text-gray-400 mb-1">Wake time</label>
           <input id="wake-time" name="wake_time" type="time" value={wakeTime} onChange={e => setWakeTime(e.target.value)} />
         </div>
       </div>
@@ -52,7 +52,7 @@ export default function SleepSheetForm({ date, onSuccess }: Props) {
         <span className="text-2xl font-bold text-accent">{duration}</span>
         <span className="text-sm text-gray-400 ml-1">hrs</span>
       </div>
-      <Button type="submit" loading={mut.isPending}>Log Sleep</Button>
+      <Button type="submit" loading={mut.isPending}>Add Sleep</Button>
     </form>
   )
 }

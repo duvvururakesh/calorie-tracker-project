@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { dateFromKey, localDateKey, shiftDateKey } from '@/lib/date'
 
 interface Props {
   selectedDate: string
@@ -7,7 +8,7 @@ interface Props {
 }
 
 function getWeekDates(dateStr: string) {
-  const d = new Date(dateStr + 'T12:00:00')
+  const d = dateFromKey(dateStr)
   const day = d.getDay()
   const sun = new Date(d)
   sun.setDate(d.getDate() - day)
@@ -18,35 +19,23 @@ function getWeekDates(dateStr: string) {
   })
 }
 
-function toISO(d: Date) {
-  return d.toISOString().slice(0, 10)
-}
-
 export default function WeekSelector({ selectedDate, onSelect }: Props) {
   // viewAnchor controls which week is visible; selectedDate controls the highlight
   const [viewAnchor, setViewAnchor] = useState(selectedDate)
   const days = getWeekDates(viewAnchor)
-  const today = toISO(new Date())
-  const nextWeekAnchor = (() => {
-    const d = new Date(viewAnchor + 'T12:00:00')
-    d.setDate(d.getDate() + 7)
-    return toISO(d)
-  })()
-  const nextWeekStartsInFuture = toISO(getWeekDates(nextWeekAnchor)[0]) > today
+  const today = localDateKey()
 
   // If selectedDate moves outside the visible week (e.g. set externally), follow it
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setViewAnchor(current => {
-      const visible = getWeekDates(current).map(d => toISO(d))
+      const visible = getWeekDates(current).map(d => localDateKey(d))
       return visible.includes(selectedDate) ? current : selectedDate
     })
   }, [selectedDate])
 
   function shiftWeek(n: number) {
-    const d = new Date(viewAnchor + 'T12:00:00')
-    d.setDate(d.getDate() + n)
-    setViewAnchor(toISO(d))
+    setViewAnchor(shiftDateKey(viewAnchor, n))
   }
 
   return (
@@ -61,23 +50,18 @@ export default function WeekSelector({ selectedDate, onSelect }: Props) {
 
       <div className="flex-1 flex gap-1 mx-1 overflow-x-auto no-scrollbar min-w-0">
         {days.map(d => {
-          const iso = toISO(d)
+          const iso = localDateKey(d)
           const isSelected = iso === selectedDate
           const isToday = iso === today
           const isFuture = iso > today
           return (
             <button
               key={iso}
-              onClick={() => {
-                if (!isFuture) onSelect(iso)
-              }}
-              disabled={isFuture}
+              onClick={() => onSelect(iso)}
               className={`min-h-12 min-w-11 flex flex-col items-center justify-center py-1.5 px-0.5 rounded-lg transition-colors ${
-                isFuture
-                  ? 'text-gray-700 cursor-not-allowed'
-                  : isSelected
-                    ? 'bg-lime text-black font-bold'
-                    : 'text-white/70 hover:bg-elevated'
+                isSelected
+                  ? isFuture ? 'bg-elevated text-gray-300 ring-1 ring-white/10' : 'bg-lime text-black font-bold'
+                  : isFuture ? 'text-gray-600 hover:bg-elevated/40' : 'text-white/70 hover:bg-elevated'
               }`}
             >
               <span className={`text-[10px] font-normal leading-tight ${isSelected ? 'opacity-50' : 'text-gray-500'}`}>
@@ -97,8 +81,7 @@ export default function WeekSelector({ selectedDate, onSelect }: Props) {
       <button
         onClick={() => shiftWeek(7)}
         aria-label="Next week"
-        disabled={nextWeekStartsInFuture}
-        className="w-11 h-11 rounded-lg hover:bg-elevated transition-colors text-gray-400 hover:text-white flex-shrink-0 flex items-center justify-center disabled:text-gray-700 disabled:hover:bg-transparent disabled:cursor-not-allowed"
+        className="w-11 h-11 rounded-lg hover:bg-elevated transition-colors text-gray-400 hover:text-white flex-shrink-0 flex items-center justify-center"
       >
         <ChevronRight size={16} />
       </button>

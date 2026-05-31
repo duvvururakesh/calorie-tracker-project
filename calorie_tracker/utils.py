@@ -21,11 +21,24 @@ def get_daily_totals(user_id, date_):
 
 def get_health_metrics(user, totals):
     from datetime import date
-    metrics = {'bmi': 'N/A', 'bmi_status': 'N/A', 'maintenance_calories': 'N/A', 'calorie_deficit': 'N/A'}
+    metrics = {
+        'bmi': 'N/A',
+        'bmi_status': 'N/A',
+        'maintenance_calories': 'N/A',
+        'calorie_deficit': 'N/A',
+        'ideal_weight_min_kg': None,
+        'ideal_weight_max_kg': None,
+        'ideal_weight_target_kg': None,
+        'weight_delta_to_target_kg': None,
+    }
     if user.weight_kg and user.height_cm:
         height_m = user.height_cm / 100
         bmi = user.weight_kg / (height_m ** 2)
         metrics['bmi'] = f"{bmi:.2f}"
+        metrics['ideal_weight_min_kg'] = round(18.5 * (height_m ** 2), 1)
+        metrics['ideal_weight_max_kg'] = round(24.9 * (height_m ** 2), 1)
+        metrics['ideal_weight_target_kg'] = round(22.0 * (height_m ** 2), 1)
+        metrics['weight_delta_to_target_kg'] = round(metrics['ideal_weight_target_kg'] - user.weight_kg, 1)
         if bmi < 18.5:
             metrics['bmi_status'] = 'Underweight'
         elif bmi < 25:

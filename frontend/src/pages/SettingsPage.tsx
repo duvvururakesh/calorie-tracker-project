@@ -1,11 +1,32 @@
 import { cloneElement, isValidElement, useId, useState, useEffect } from 'react'
-import { useQuery, useMutation } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { Lock } from 'lucide-react'
 import api from '@/api/client'
 import Card from '@/components/Card'
 import Button from '@/components/Button'
 import Alert from '@/components/Alert'
 
-type TabKey = 'profile' | 'account'
+type TabKey = 'profile' | 'sharing' | 'account'
+
+type Privacy = {
+  show_calories: boolean
+  show_macros: boolean
+  show_water: boolean
+  show_steps: boolean
+  show_sleep: boolean
+  show_weight: boolean
+  show_food_names: boolean
+}
+
+const privacyLabels: { key: keyof Privacy; label: string; detail: string }[] = [
+  { key: 'show_calories', label: 'Calories Intake', detail: 'Daily food calories' },
+  { key: 'show_macros', label: 'Macros', detail: 'Protein, carbs, and fat' },
+  { key: 'show_water', label: 'Water', detail: 'Daily water total' },
+  { key: 'show_steps', label: 'Steps', detail: 'Daily step total' },
+  { key: 'show_sleep', label: 'Sleep', detail: 'Sleep duration' },
+  { key: 'show_weight', label: 'Weight', detail: 'Latest weight' },
+  { key: 'show_food_names', label: 'Food names', detail: 'Recent food labels' },
+]
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   const id = useId()
@@ -18,6 +39,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 export default function SettingsPage() {
+  const qc = useQueryClient()
   const [tab, setTab]           = useState<TabKey>('profile')
   const [profileMsg, setProfileMsg] = useState('')
   const [accountMsg, setAccountMsg] = useState('')
@@ -26,6 +48,10 @@ export default function SettingsPage() {
   const { data: profile } = useQuery({
     queryKey: ['profile'],
     queryFn: () => api.get('/profile').then(r => r.data),
+  })
+  const { data: privacy } = useQuery({
+    queryKey: ['friend-privacy'],
+    queryFn: () => api.get('/privacy/friends').then(r => r.data as Privacy),
   })
 
   const [p, setP] = useState({
@@ -59,7 +85,7 @@ export default function SettingsPage() {
   const profileMut = useMutation({
     mutationFn: () => api.put('/profile', p),
     onSuccess: () => {
-      setProfileMsg('Profile updated!')
+      setProfileMsg('Profile saved')
       setTimeout(() => setProfileMsg(''), 2500)
     },
   })
@@ -67,7 +93,7 @@ export default function SettingsPage() {
   const accountMut = useMutation({
     mutationFn: () => api.put('/account', a),
     onSuccess: () => {
-      setAccountMsg('Account updated!')
+      setAccountMsg('Account saved')
       setAccountErr('')
       setTimeout(() => setAccountMsg(''), 2500)
     },
@@ -76,16 +102,25 @@ export default function SettingsPage() {
       setAccountErr(e.response?.data?.error || 'Update failed')
     },
   })
+  const privacyMut = useMutation({
+    mutationFn: (next: Privacy) => api.put('/privacy/friends', next),
+    onSuccess: response => {
+      qc.setQueryData(['friend-privacy'], response.data)
+      qc.invalidateQueries({ queryKey: ['friends'] })
+      qc.invalidateQueries({ queryKey: ['friends-activity'] })
+    },
+  })
 
   const tabs: { key: TabKey; label: string }[] = [
     { key: 'profile', label: 'Profile' },
+    { key: 'sharing', label: 'Sharing' },
     { key: 'account', label: 'Account' },
   ]
 
   return (
-    <div className="max-w-lg mx-auto min-w-0">
+    <div className="max-w-2xl mx-auto min-w-0">
       <div className="mb-3 sm:mb-6">
-        <p className="text-sm text-gray-400">Profile and account</p>
+        <p className="text-sm text-gray-400">Profile, sharing, and sign-in</p>
         <h1 className="text-2xl sm:text-3xl font-bold">Settings</h1>
       </div>
 
@@ -95,7 +130,7 @@ export default function SettingsPage() {
             <button
               key={t.key}
               onClick={() => setTab(t.key)}
-              className="flex-1 min-h-11 py-2 rounded-xl font-semibold text-sm transition-colors"
+              className="flex-1 min-h-11 px-2 py-2 rounded-xl font-semibold text-sm transition-colors"
               style={
                 tab === t.key
                   ? { backgroundColor: 'var(--color-lime)', color: '#000' }
@@ -110,7 +145,7 @@ export default function SettingsPage() {
         {/* Profile tab */}
         {tab === 'profile' && (
           <div className="space-y-3 sm:space-y-4">
-            <Field label="Display Name">
+            <Field label="Display name">
               <input name="profile_name" type="text" value={p.profile_name}
                 onChange={e => setP(v => ({ ...v, profile_name: e.target.value }))} />
             </Field>
@@ -122,7 +157,7 @@ export default function SettingsPage() {
               <input name="weight_kg" type="number" value={p.weight_kg}
                 onChange={e => setP(v => ({ ...v, weight_kg: e.target.value }))} min="0" step="0.1" />
             </Field>
-            <Field label="Date of Birth">
+            <Field label="Date of birth">
               <input name="date_of_birth" type="date" value={p.date_of_birth}
                 onChange={e => setP(v => ({ ...v, date_of_birth: e.target.value }))} />
             </Field>
@@ -133,20 +168,56 @@ export default function SettingsPage() {
                 <option value="female">Female</option>
               </select>
             </Field>
-            <Field label="Activity Level">
+            <Field label="Daily routine">
               <select name="activity_level" value={p.activity_level}
                 onChange={e => setP(v => ({ ...v, activity_level: e.target.value }))}>
-                <option value="sedentary">Sedentary</option>
-                <option value="light">Light</option>
-                <option value="moderate">Moderate</option>
-                <option value="active">Active</option>
-                <option value="extra_active">Extra Active</option>
+                <option value="sedentary">Mostly sitting</option>
+                <option value="light">Light movement</option>
+                <option value="moderate">Moderate movement</option>
+                <option value="active">Very active day</option>
+                <option value="extra_active">High-output day</option>
               </select>
             </Field>
             {profileMsg && <Alert message={profileMsg} type="success" />}
             <Button onClick={() => profileMut.mutate()} loading={profileMut.isPending}>
               Save Profile
             </Button>
+          </div>
+        )}
+
+        {/* Sharing tab */}
+        {tab === 'sharing' && (
+          <div className="space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-11 h-11 rounded-full bg-elevated text-lime flex items-center justify-center shrink-0">
+                <Lock size={18} />
+              </div>
+              <div className="min-w-0">
+                <h2 className="text-xl font-semibold tracking-tight">Friend sharing</h2>
+                <p className="text-sm text-gray-500 leading-snug">
+                  Accepted friends only see the daily totals you enable here.
+                </p>
+              </div>
+            </div>
+
+            {privacy && (
+              <div className="divide-y divide-white/8 rounded-2xl bg-elevated/45 px-3">
+                {privacyLabels.map(item => (
+                  <label key={item.key} className="flex items-center justify-between gap-4 py-3">
+                    <span className="min-w-0">
+                      <span className="block font-semibold">{item.label}</span>
+                      <span className="block text-sm text-gray-500 leading-snug">{item.detail}</span>
+                    </span>
+                    <input
+                      type="checkbox"
+                      className="h-6 w-6 shrink-0 accent-lime"
+                      checked={privacy[item.key]}
+                      onChange={e => privacyMut.mutate({ ...privacy, [item.key]: e.target.checked })}
+                    />
+                  </label>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -163,19 +234,19 @@ export default function SettingsPage() {
             </Field>
             <hr style={{ borderColor: 'var(--color-elevated)' }} />
             <p className="text-xs font-semibold uppercase tracking-widest text-gray-500">
-              Change Password
+              Change password
             </p>
-            <Field label="Current Password">
+            <Field label="Current password">
               <input name="current_password" type="password" placeholder="Current password"
                 value={a.current_password}
                 onChange={e => setA(v => ({ ...v, current_password: e.target.value }))} />
             </Field>
-            <Field label="New Password">
+            <Field label="New password">
               <input name="new_password" type="password" placeholder="New password"
                 value={a.new_password}
                 onChange={e => setA(v => ({ ...v, new_password: e.target.value }))} />
             </Field>
-            <Field label="Confirm New Password">
+            <Field label="Confirm new password">
               <input name="confirm_new_password" type="password" placeholder="Confirm new password"
                 value={a.confirm_new_password}
                 onChange={e => setA(v => ({ ...v, confirm_new_password: e.target.value }))} />

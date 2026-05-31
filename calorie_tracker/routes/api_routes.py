@@ -1,5 +1,6 @@
 from flask import Blueprint, jsonify, request
 from flask_login import login_user, logout_user, current_user, login_required
+from sqlalchemy import and_, or_
 from datetime import datetime, date, timedelta
 import json
 import os
@@ -9,7 +10,8 @@ import urllib.request
 from .. import db
 from ..models import (
     User, FoodEntry, WaterEntry, WeightEntry, StepEntry, SleepEntry,
-    CaloriesBurntEntry, ChatMessage, UserMemory
+    CaloriesBurntEntry, ChatMessage, UserMemory, AgentActionLog,
+    Friendship, FriendPrivacy
 )
 from ..utils import get_daily_totals, get_health_metrics, get_user_goals
 
@@ -28,10 +30,125 @@ def _parse_selected_date(payload):
     except (TypeError, ValueError):
         return date.today()
 
+def _resolve_message_date(message, selected):
+    text = (message or '').lower()
+    if re.search(r'\b(?:yesterday|yday|last night)\b', text):
+        return date.today() - timedelta(days=1)
+
+    days_ago = re.search(r'\b(\d+)\s+days?\s+ago\b', text)
+    if days_ago:
+        return date.today() - timedelta(days=int(days_ago.group(1)))
+
+    explicit = re.search(r'\b(?:on\s+)?(\d{4}-\d{2}-\d{2})\b', text)
+    if explicit:
+        try:
+            return datetime.strptime(explicit.group(1), '%Y-%m-%d').date()
+        except ValueError:
+            pass
+
+    return selected
+
 def _future_date_error(selected):
     if selected > date.today():
         return err('Future dates cannot be logged. Fitit only accepts real-time or past entries.', 400)
     return None
+
+def _parse_query_date():
+    try:
+        return datetime.strptime(request.args.get('date', date.today().isoformat()), '%Y-%m-%d').date()
+    except (TypeError, ValueError):
+        return date.today()
+
+def _public_user(user):
+    return dict(
+        id=user.id,
+        username=user.username,
+        profile_name=user.profile_name or user.username,
+    )
+
+def _friendship_between(user_a, user_b):
+    return Friendship.query.filter(
+        or_(
+            and_(Friendship.requester_id == user_a, Friendship.receiver_id == user_b),
+            and_(Friendship.requester_id == user_b, Friendship.receiver_id == user_a),
+        )
+    ).first()
+
+def _ensure_friend_privacy(user_id):
+    privacy = FriendPrivacy.query.filter_by(user_id=user_id).first()
+    if not privacy:
+        privacy = FriendPrivacy(user_id=user_id)
+        db.session.add(privacy)
+        db.session.flush()
+    return privacy
+
+def _serialize_friend_privacy(privacy):
+    return dict(
+        show_calories=privacy.show_calories,
+        show_macros=privacy.show_macros,
+        show_water=privacy.show_water,
+        show_steps=privacy.show_steps,
+        show_sleep=privacy.show_sleep,
+        show_active_calories=privacy.show_active_calories,
+        show_weight=privacy.show_weight,
+        show_food_names=privacy.show_food_names,
+    )
+
+def _serialize_friendship(friendship):
+    other = friendship.receiver if friendship.requester_id == current_user.id else friendship.requester
+    direction = 'outgoing' if friendship.requester_id == current_user.id else 'incoming'
+    return dict(
+        id=friendship.id,
+        status=friendship.status,
+        direction=direction,
+        user=_public_user(other),
+        created_at=friendship.created_at.isoformat(),
+    )
+
+def _accepted_friendships(user_id):
+    return Friendship.query.filter(
+        Friendship.status == 'accepted',
+        or_(Friendship.requester_id == user_id, Friendship.receiver_id == user_id),
+    ).order_by(Friendship.updated_at.desc(), Friendship.id.desc()).all()
+
+def _friend_metric_summary(user, selected):
+    privacy = _ensure_friend_privacy(user.id)
+    totals = get_daily_totals(user.id, selected)
+    payload = dict(user=_public_user(user), date=selected.isoformat(), shared=_serialize_friend_privacy(privacy))
+    if privacy.show_calories:
+        payload['calories'] = round(totals.get('calories', 0), 1)
+        payload['calorie_goal'] = user.calorie_goal
+    if privacy.show_macros:
+        payload['macros'] = dict(
+            protein=round(totals.get('protein', 0), 1),
+            carbs=round(totals.get('carbs', 0), 1),
+            fat=round(totals.get('fat', 0), 1),
+        )
+        payload['macro_goals'] = dict(
+            protein=user.protein_goal,
+            carbs=user.carbs_goal,
+            fat=user.fat_goal,
+        )
+    if privacy.show_water:
+        payload['water'] = int(totals.get('water', 0))
+        payload['water_goal'] = user.water_goal
+    if privacy.show_steps:
+        payload['steps'] = int(totals.get('steps', 0))
+        payload['step_goal'] = user.step_goal
+    if privacy.show_sleep:
+        payload['sleep'] = round(totals.get('sleep', 0), 1)
+        payload['sleep_goal'] = user.sleep_goal
+    if privacy.show_weight:
+        latest_weight = (WeightEntry.query.filter_by(user_id=user.id)
+                         .order_by(WeightEntry.date.desc(), WeightEntry.id.desc()).first())
+        payload['weight_kg'] = round(latest_weight.weight_kg, 1) if latest_weight else None
+    if privacy.show_food_names:
+        payload['foods'] = [
+            dict(id=e.id, name=e.name, calories=e.calories)
+            for e in FoodEntry.query.filter_by(user_id=user.id, date=selected)
+                                    .order_by(FoodEntry.id.desc()).limit(5).all()
+        ]
+    return payload
 
 def _number_before(words, text, default=None):
     pattern = rf'(\d+(?:\.\d+)?)\s*(?:{"|".join(words)})'
@@ -50,6 +167,19 @@ def _memory_map(user_id):
 
 def _latest_entry(model, user_id):
     return model.query.filter_by(user_id=user_id).order_by(model.date.desc(), model.id.desc()).first()
+
+def _agent_result(ok_, message, **data):
+    return {'ok': ok_, 'message': message, **data}
+
+def _log_agent_tool(tool, request_data, result):
+    db.session.add(AgentActionLog(
+        user_id=current_user.id,
+        agent='nibbly',
+        tool=tool,
+        status='ok' if result.get('ok') else 'blocked',
+        request=json.dumps(request_data, default=str, separators=(',', ':'))[:2000],
+        result=json.dumps(result, default=str, separators=(',', ':'))[:2000],
+    ))
 
 def _entry_snapshot(entry):
     return dict(
@@ -319,8 +449,12 @@ def _looks_like_food_or_correction(prompt):
     return any(re.search(rf'\b{re.escape(word)}\b', prompt) for word in keywords)
 
 def _planner_context(selected, prompt=''):
+    recent_actions = (AgentActionLog.query.filter_by(user_id=current_user.id, agent='nibbly')
+                      .order_by(AgentActionLog.created_at.desc(), AgentActionLog.id.desc())
+                      .limit(10).all())
     return dict(
         date=selected.isoformat(),
+        date_label='today' if selected == date.today() else selected.strftime('%b %d, %Y'),
         user=dict(id=current_user.id, name=current_user.profile_name or current_user.username),
         goals=get_user_goals(current_user),
         today_totals=get_daily_totals(current_user.id, selected),
@@ -329,25 +463,29 @@ def _planner_context(selected, prompt=''):
         recent_chat=_recent_chat_context(current_user.id),
         macro_reference=_macro_reference_context(prompt),
         memories=_memory_map(current_user.id),
+        allowed_tools=sorted(AGENT_TOOLS.keys()) if 'AGENT_TOOLS' in globals() else [],
+        recent_agent_actions=[
+            dict(tool=a.tool, status=a.status, result=a.result)
+            for a in recent_actions
+        ],
     )
 
 def _planner_instructions():
     return (
-        "You are Nibbly, the Fitit in-app nutrition coach. Convert the user's natural language into safe database operations. "
-        "Use today's food list to decide whether this is a new log, correction, deletion, or clarification. "
+        "You are Nibbly, the Fitit in-app nutrition agent. Convert the user's natural language into safe tool calls. "
+        "Use context.date and that date's food list to decide whether this is a new log, correction, deletion, or clarification. "
         "Use recent_chat for follow-ups such as 'another bowl' or 'make it bigger'. "
         "Use routine_foods, memories, and macro_reference before estimating. "
         "Estimate nutrition when needed, but do not invent exactness; keep estimates reasonable and name uncertain items clearly. "
         "For branded drinks, restaurants, and vague portions, infer from size words and ask only if the target item is ambiguous. "
-        "Create remember operations for stable user facts: preferences, usual foods, common orders, allergies, dislikes, portion tendencies, or preferred units. "
-        "Return only JSON with keys: reply string, operations array. "
-        "Allowed operations: "
-        "{type:'create_food', name, calories, protein, carbs, fat, sugar}, "
-        "{type:'update_food', id, name?, calories?, protein?, carbs?, fat?, sugar?}, "
-        "{type:'delete_food', id}, "
-        "{type:'remember', key, value}, "
-        "{type:'ask'}. "
-        "If deletion/update is ambiguous, use ask and explain which item needs clarification. "
+        "Call remember_user_fact for stable user facts: preferences, usual foods, common orders, allergies, dislikes, portion tendencies, or preferred units. "
+        "Return only JSON with keys: reply string, tool_calls array. "
+        "Each tool call must be {tool:string, args:object}. "
+        "Allowed tools are listed in context.allowed_tools. "
+        "Never invent a tool name. Never log to a future date. "
+        "Past dates are allowed when context.date is in the past. "
+        "For deletion/update, use an exact id from context.today_foods for the selected date unless the user clearly says latest/last. "
+        "If deletion/update is ambiguous, call ask_clarification and explain which item needs clarification. "
         "Numbers must be numeric. Keep reply concise, specific, and natural."
     )
 
@@ -554,6 +692,385 @@ def _ask_ai_general_reply(prompt, selected):
     except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError, json.JSONDecodeError, ValueError):
         return None
 
+def _fallback_dashboard_insights(totals, goals, metrics):
+    def as_float(value):
+        try:
+            return float(value)
+        except (TypeError, ValueError):
+            return None
+
+    insights = []
+    bmi = as_float(metrics.get('bmi'))
+    bmi_status = metrics.get('bmi_status')
+    ideal_min = as_float(metrics.get('ideal_weight_min_kg'))
+    ideal_max = as_float(metrics.get('ideal_weight_max_kg'))
+    target_weight = as_float(metrics.get('ideal_weight_target_kg'))
+    weight_delta = as_float(metrics.get('weight_delta_to_target_kg'))
+
+    if bmi is not None:
+        insights.append(
+            f"Your BMI is {bmi:.1f}. The standard normal BMI range is 18.5 to 24.9; use it as a screening guide, not a full health score."
+        )
+        if bmi_status:
+            insights.append(f"Current BMI category: {bmi_status}. Track the weekly trend instead of reacting to one day.")
+        if ideal_min is not None and ideal_max is not None:
+            insights.append(f"For your height, the standard BMI range maps to roughly {ideal_min:.1f}-{ideal_max:.1f} kg.")
+        if target_weight is not None and weight_delta is not None:
+            if weight_delta < -0.2:
+                insights.append(f"A practical target is near {target_weight:.1f} kg, about {abs(weight_delta):.1f} kg below your current weight.")
+            elif weight_delta > 0.2:
+                insights.append(f"A practical target is near {target_weight:.1f} kg, about {weight_delta:.1f} kg above your current weight.")
+            else:
+                insights.append("You are close to the middle of the standard BMI range. Maintenance habits matter most now.")
+    else:
+        insights.append("Add height, weight, date of birth, gender, and routine to unlock BMI, maintenance, and weight guidance.")
+
+    calorie_goal = goals.get('calorie_goal') or 0
+    calories = totals.get('calories') or 0
+    if calorie_goal:
+        remaining = round(calorie_goal - calories)
+        if remaining > 0:
+            insights.append(f"{remaining} calories remain for today. Keep the next meal balanced instead of saving everything for late night.")
+        elif remaining < 0:
+            insights.append(f"You are {abs(remaining)} calories over target. Make the next choice lighter, higher-protein, and lower-sugar.")
+        else:
+            insights.append("Calories are exactly on target today. Keep hydration and sleep on track too.")
+
+    protein_goal = goals.get('protein_goal') or 0
+    protein_left = max(0, round(protein_goal - (totals.get('protein') or 0)))
+    if protein_goal and protein_left:
+        insights.append(f"{protein_left}g protein left. Eggs, yogurt, tofu, paneer, chicken, lentils, or a protein shake can close the gap.")
+    elif protein_goal:
+        insights.append("Protein is covered today. That helps fullness and recovery.")
+
+    carbs_goal = goals.get('carbs_goal') or 0
+    carbs_left = round(carbs_goal - (totals.get('carbs') or 0))
+    if carbs_goal and carbs_left < 0:
+        insights.append(f"Carbs are {abs(carbs_left)}g over target. Keep the next snack protein- or fiber-led.")
+
+    fat_goal = goals.get('fat_goal') or 0
+    fat_left = round(fat_goal - (totals.get('fat') or 0))
+    if fat_goal and fat_left < 0:
+        insights.append(f"Fat is {abs(fat_left)}g over target. Choose grilled, steamed, or leaner options next.")
+
+    sugar_goal = goals.get('sugar_goal') or 0
+    sugar_left = round(sugar_goal - (totals.get('sugar') or 0))
+    if sugar_goal and sugar_left < 0:
+        insights.append(f"Sugar is {abs(sugar_left)}g over target. Avoid sweet drinks for the rest of the day.")
+
+    water_goal = goals.get('water_goal') or 0
+    water_left = max(0, round(water_goal - (totals.get('water') or 0)))
+    if water_goal and water_left:
+        insights.append(f"{water_left} ml water left. Split it into a few smaller drinks so it is easier to finish.")
+    elif water_goal:
+        insights.append("Water target is complete. Keep normal sips going if you are active or it is hot.")
+
+    step_goal = goals.get('step_goal') or 0
+    steps_left = max(0, round(step_goal - (totals.get('steps') or 0)))
+    if step_goal and steps_left:
+        insights.append(f"{steps_left:,} steps left. A 10-15 minute walk can make a visible dent.")
+    elif step_goal:
+        insights.append("Step goal is complete. Good daily movement base.")
+
+    sleep_goal = goals.get('sleep_goal') or 0
+    sleep_left = max(0, round((sleep_goal - (totals.get('sleep') or 0)) * 10) / 10)
+    if sleep_goal and sleep_left:
+        insights.append(f"{sleep_left:g} hours of sleep left against your target. A consistent bedtime will help the trend.")
+
+    return list(dict.fromkeys(insights))[:10]
+
+def _ask_ai_dashboard_insights(selected, totals, goals, metrics):
+    fallback = _fallback_dashboard_insights(totals, goals, metrics)
+    context = dict(
+        date=selected.isoformat(),
+        user=dict(name=current_user.profile_name or current_user.username),
+        totals=totals,
+        goals=goals,
+        health_metrics=metrics,
+        routine_foods=_routine_food_context(current_user.id, selected),
+        memories=_memory_map(current_user.id),
+        fallback_examples=fallback,
+    )
+    instructions = (
+        "Create concise personalized dashboard insights for Fitit, a nutrition and wellness tracker. "
+        "Use the user's totals, goals, health metrics, routine foods, and memories. "
+        "Return 6 to 9 varied insights, not the same three every time. Include BMI education when BMI exists: "
+        "standard normal BMI range is 18.5-24.9, but BMI is only a screening guide. "
+        "Mention nutrition gaps, hydration, steps, sleep, calorie balance, maintenance/deficit, and weight trend when relevant. "
+        "Avoid medical diagnosis, shame, and generic motivation. Keep each item under 140 characters. "
+        "Return only JSON: {\"insights\":[\"...\"]}."
+    )
+
+    if os.environ.get('GEMINI_API_KEY'):
+        model = os.environ.get('GEMINI_MODEL', 'gemini-2.5-flash')
+        body = {
+            'contents': [{
+                'role': 'user',
+                'parts': [{'text': f"{instructions}\n\nInput JSON:\n{json.dumps(context)}"}],
+            }],
+            'generationConfig': {'temperature': 0.55, 'responseMimeType': 'application/json'},
+        }
+        url = f'https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={os.environ["GEMINI_API_KEY"]}'
+        req = urllib.request.Request(
+            url,
+            data=json.dumps(body).encode('utf-8'),
+            headers={'Content-Type': 'application/json'},
+            method='POST',
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=8) as res:
+                payload = json.loads(res.read().decode('utf-8'))
+            result = json.loads(_clean_json_text(_gemini_output_text(payload)))
+            insights = result.get('insights') if isinstance(result, dict) else None
+            if isinstance(insights, list):
+                cleaned = [str(item).strip()[:180] for item in insights if str(item).strip()]
+                if cleaned:
+                    return list(dict.fromkeys(cleaned))[:9]
+        except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError, json.JSONDecodeError, ValueError):
+            pass
+
+    api_key = os.environ.get('OPENAI_API_KEY')
+    if api_key:
+        body = {
+            'model': os.environ.get('OPENAI_MODEL', 'gpt-4.1-mini'),
+            'input': [
+                {'role': 'system', 'content': instructions},
+                {'role': 'user', 'content': json.dumps(context)},
+            ],
+            'temperature': 0.55,
+        }
+        req = urllib.request.Request(
+            'https://api.openai.com/v1/responses',
+            data=json.dumps(body).encode('utf-8'),
+            headers={'Authorization': f'Bearer {api_key}', 'Content-Type': 'application/json'},
+            method='POST',
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=8) as res:
+                payload = json.loads(res.read().decode('utf-8'))
+            result = json.loads(_clean_json_text(_openai_output_text(payload)))
+            insights = result.get('insights') if isinstance(result, dict) else None
+            if isinstance(insights, list):
+                cleaned = [str(item).strip()[:180] for item in insights if str(item).strip()]
+                if cleaned:
+                    return list(dict.fromkeys(cleaned))[:9]
+        except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError, json.JSONDecodeError, ValueError):
+            pass
+
+    return fallback
+
+def _tool_create_food(args, selected):
+    name = str(args.get('name') or 'AI food').strip()[:100]
+    if not name:
+        return _agent_result(False, 'Food name is required.')
+    entry = FoodEntry(
+        user_id=current_user.id,
+        date=selected,
+        name=name,
+        calories=float(args.get('calories') or 0),
+        protein=float(args.get('protein') or 0),
+        carbs=float(args.get('carbs') or 0),
+        fat=float(args.get('fat') or 0),
+        sugar=float(args.get('sugar') or 0),
+    )
+    db.session.add(entry)
+    db.session.flush()
+    return _agent_result(True, f"Logged {entry.name}.", type='food', operation='create', id=entry.id)
+
+def _tool_update_food(args, selected):
+    entry = FoodEntry.query.get(int(args.get('id') or 0))
+    if not entry or entry.user_id != current_user.id or entry.date != selected:
+        return _agent_result(False, 'I could not find that food entry for the selected date.')
+    _store_undo(entry)
+    for field in ('name', 'calories', 'protein', 'carbs', 'fat', 'sugar'):
+        if field in args and args[field] is not None:
+            value = str(args[field]).strip()[:100] if field == 'name' else float(args[field])
+            setattr(entry, field, value)
+    return _agent_result(True, f"Updated {entry.name}.", type='food', operation='update', id=entry.id)
+
+def _tool_delete_food(args, selected):
+    entry = FoodEntry.query.get(int(args.get('id') or 0))
+    if not entry or entry.user_id != current_user.id or entry.date != selected:
+        return _agent_result(False, 'I could not find that food entry for the selected date.')
+    snap = _entry_snapshot(entry)
+    _remember(current_user.id, 'last_food_undo', (
+        f"delete|{entry.id}|{snap['name']}|{snap['calories']}|{snap['protein']}|"
+        f"{snap['carbs']}|{snap['fat']}|{snap['sugar']}"
+    ))
+    db.session.delete(entry)
+    return _agent_result(True, f"Deleted {snap['name']}.", type='food', operation='delete', id=entry.id)
+
+def _tool_log_water(args, selected):
+    amount = int(float(args.get('amount_ml') or 0))
+    if amount <= 0:
+        return _agent_result(False, 'Water amount must be greater than zero.')
+    entry = WaterEntry(user_id=current_user.id, date=selected, amount_ml=amount)
+    db.session.add(entry)
+    db.session.flush()
+    return _agent_result(True, f"Logged {amount} ml of water.", type='water', operation='create', id=entry.id)
+
+def _tool_update_water(args, selected):
+    entry = WaterEntry.query.get(int(args.get('id') or 0)) if args.get('id') else _latest_entry(WaterEntry, current_user.id)
+    if not entry or entry.user_id != current_user.id or entry.date != selected:
+        return _agent_result(False, 'I could not find a water entry for the selected date.')
+    amount = int(float(args.get('amount_ml') or 0))
+    if amount <= 0:
+        return _agent_result(False, 'Water amount must be greater than zero.')
+    entry.amount_ml = amount
+    return _agent_result(True, f"Updated water to {amount} ml.", type='water', operation='update', id=entry.id)
+
+def _tool_delete_latest_water(args, selected):
+    entry = (WaterEntry.query.filter_by(user_id=current_user.id, date=selected)
+             .order_by(WaterEntry.id.desc()).first())
+    if not entry:
+        return _agent_result(False, 'I could not find a water entry for the selected date.')
+    amount = entry.amount_ml
+    db.session.delete(entry)
+    return _agent_result(True, f"Removed your last water entry ({amount} ml).", type='water', operation='delete', id=entry.id)
+
+def _tool_log_steps(args, selected):
+    steps = int(float(args.get('steps') or 0))
+    if steps <= 0:
+        return _agent_result(False, 'Steps must be greater than zero.')
+    entry = StepEntry(user_id=current_user.id, date=selected, steps=steps)
+    db.session.add(entry)
+    db.session.flush()
+    return _agent_result(True, f"Logged {steps} steps.", type='steps', operation='create', id=entry.id)
+
+def _tool_update_steps(args, selected):
+    entry = StepEntry.query.get(int(args.get('id') or 0)) if args.get('id') else _latest_entry(StepEntry, current_user.id)
+    if not entry or entry.user_id != current_user.id or entry.date != selected:
+        return _agent_result(False, 'I could not find a steps entry for the selected date.')
+    steps = int(float(args.get('steps') or 0))
+    if steps <= 0:
+        return _agent_result(False, 'Steps must be greater than zero.')
+    entry.steps = steps
+    return _agent_result(True, f"Updated steps to {steps}.", type='steps', operation='update', id=entry.id)
+
+def _tool_delete_latest_steps(args, selected):
+    entry = (StepEntry.query.filter_by(user_id=current_user.id, date=selected)
+             .order_by(StepEntry.id.desc()).first())
+    if not entry:
+        return _agent_result(False, 'I could not find a steps entry for the selected date.')
+    steps = entry.steps
+    db.session.delete(entry)
+    return _agent_result(True, f"Removed your last steps entry ({steps} steps).", type='steps', operation='delete', id=entry.id)
+
+def _tool_update_goals(args, selected):
+    allowed = {
+        'calorie_goal', 'calories_burnt_goal', 'protein_goal', 'carbs_goal',
+        'fat_goal', 'sugar_goal', 'water_goal', 'step_goal', 'sleep_goal'
+    }
+    changed = []
+    for key, value in args.items():
+        if key in allowed and value is not None:
+            setattr(current_user, key, float(value))
+            changed.append(key)
+    if not changed:
+        return _agent_result(False, 'No valid goals were provided.')
+    return _agent_result(True, f"Updated {', '.join(changed)}.", type='goals', operation='update', fields=changed)
+
+def _tool_remember_user_fact(args, selected):
+    key = str(args.get('key') or 'preference').strip()[:80]
+    value = str(args.get('value') or '').strip()[:500]
+    if not value:
+        return _agent_result(False, 'There was nothing useful to remember.')
+    _remember(current_user.id, key, value)
+    return _agent_result(True, f"Remembered {key}.", type='memory', operation='upsert', key=key)
+
+def _tool_read_today_logs(args, selected):
+    return _agent_result(True, 'Read selected date logs.', type='read', logs=_food_context(selected), totals=get_daily_totals(current_user.id, selected))
+
+def _tool_ask_clarification(args, selected):
+    question = str(args.get('question') or 'I need a bit more detail.').strip()[:500]
+    return _agent_result(False, question, type='ask')
+
+AGENT_TOOLS = {
+    'create_food': _tool_create_food,
+    'update_food': _tool_update_food,
+    'delete_food': _tool_delete_food,
+    'log_water': _tool_log_water,
+    'update_water': _tool_update_water,
+    'delete_latest_water': _tool_delete_latest_water,
+    'log_steps': _tool_log_steps,
+    'update_steps': _tool_update_steps,
+    'delete_latest_steps': _tool_delete_latest_steps,
+    'update_goals': _tool_update_goals,
+    'remember_user_fact': _tool_remember_user_fact,
+    'read_today_logs': _tool_read_today_logs,
+    'ask_clarification': _tool_ask_clarification,
+}
+
+LEGACY_OPERATION_TO_TOOL = {
+    'create_food': 'create_food',
+    'update_food': 'update_food',
+    'delete_food': 'delete_food',
+    'remember': 'remember_user_fact',
+    'ask': 'ask_clarification',
+}
+
+def _normalize_tool_calls(plan):
+    if not isinstance(plan, dict):
+        return []
+    calls = plan.get('tool_calls')
+    if isinstance(calls, list):
+        return [
+            {'tool': call.get('tool'), 'args': call.get('args') or {}}
+            for call in calls
+            if isinstance(call, dict)
+        ]
+
+    operations = plan.get('operations')
+    if not isinstance(operations, list):
+        return []
+    normalized = []
+    for operation in operations:
+        if not isinstance(operation, dict):
+            continue
+        op_type = operation.get('type')
+        tool = LEGACY_OPERATION_TO_TOOL.get(op_type)
+        if not tool:
+            continue
+        args = dict(operation)
+        args.pop('type', None)
+        if op_type == 'remember':
+            args = {'key': args.get('key'), 'value': args.get('value')}
+        elif op_type == 'ask':
+            args = {'question': plan.get('reply') or 'I need a bit more detail.'}
+        normalized.append({'tool': tool, 'args': args})
+    return normalized
+
+def _execute_agent_plan(plan, selected):
+    tool_calls = _normalize_tool_calls(plan)
+    if not tool_calls:
+        return plan.get('reply', 'I need a clearer instruction.'), 'agent_ask', None
+
+    results = []
+    for call in tool_calls[:6]:
+        tool = call.get('tool')
+        args = call.get('args') if isinstance(call.get('args'), dict) else {}
+        if tool not in AGENT_TOOLS:
+            result = _agent_result(False, f"Blocked unknown tool: {tool}.")
+        else:
+            try:
+                result = AGENT_TOOLS[tool](args, selected)
+            except (KeyError, TypeError, ValueError):
+                result = _agent_result(False, f"{tool} received invalid input.")
+        _log_agent_tool(tool or 'unknown', args, result)
+        results.append({'tool': tool, 'result': result})
+
+    blocked = [item['result']['message'] for item in results if not item['result'].get('ok')]
+    succeeded = [item for item in results if item['result'].get('ok')]
+    reply = plan.get('reply')
+    if not reply:
+        reply = blocked[0] if blocked and not succeeded else 'Updated your log.'
+    action = {
+        'type': 'agent',
+        'tools': results,
+        'primary': succeeded[0]['result'] if succeeded else (results[0]['result'] if results else None),
+    }
+    return reply, 'agent_plan', action
+
 def _learn_from_interaction(message, selected, intent, action):
     _remember(current_user.id, 'last_coach_message', message[:500])
 
@@ -562,8 +1079,9 @@ def _learn_from_interaction(message, selected, intent, action):
     if common:
         _remember(current_user.id, 'common_foods_summary', json.dumps(common, separators=(',', ':'))[:1200])
 
-    if action and action.get('type') == 'food':
-        food_id = action.get('id')
+    primary = action.get('primary') if action and action.get('type') == 'agent' else action
+    if primary and primary.get('type') == 'food':
+        food_id = primary.get('id')
         entry = FoodEntry.query.get(food_id) if food_id else None
         if not entry:
             entry = _latest_entry(FoodEntry, current_user.id)
@@ -575,7 +1093,7 @@ def _learn_from_interaction(message, selected, intent, action):
                 carbs=entry.carbs,
                 fat=entry.fat,
                 sugar=entry.sugar,
-                operation=action.get('operation'),
+                operation=primary.get('operation'),
             ), separators=(',', ':'))[:700])
 
     if intent in ('log_water', 'update_water', 'delete_water'):
@@ -654,23 +1172,26 @@ def _assistant_reply(message, selected):
     remember_match = re.search(r'\b(?:remember|note|i like|i prefer|my goal is)\b\s*(?:that\s*)?(.*)', lower)
     if remember_match and remember_match.group(1).strip():
         value = remember_match.group(1).strip()
-        _remember(current_user.id, 'preference', value)
-        return f"I'll remember that: {value}.", 'remember', {'type': 'memory', 'key': 'preference'}
+        plan = {
+            'reply': f"I'll remember that: {value}.",
+            'tool_calls': [{'tool': 'remember_user_fact', 'args': {'key': 'preference', 'value': value}}],
+        }
+        return _execute_agent_plan(plan, selected)
 
     if _looks_like_food_or_correction(lower):
         plan, error = _ask_ai_food_planner(text, selected)
         if error == 'ai_error':
             fallback_plan = _fallback_food_plan_from_reference(text)
             if fallback_plan:
-                reply, intent, action = _apply_ai_food_plan(fallback_plan, selected)
+                reply, intent, action = _execute_agent_plan(fallback_plan, selected)
                 return reply, 'reference_food_plan', action
         if plan:
-            reply, intent, action = _apply_ai_food_plan(plan, selected)
+            reply, intent, action = _execute_agent_plan(plan, selected)
             return reply, intent, action
         if error == 'missing_key':
             fallback_plan = _fallback_food_plan_from_reference(text)
             if fallback_plan:
-                reply, intent, action = _apply_ai_food_plan(fallback_plan, selected)
+                reply, intent, action = _execute_agent_plan(fallback_plan, selected)
                 return reply, 'reference_food_plan', action
             return (
                 "AI food understanding is not configured yet. Add GEMINI_API_KEY or OPENAI_API_KEY on the server, "
@@ -688,49 +1209,40 @@ def _assistant_reply(message, selected):
         if liters is not None and amount is None:
             amount = liters * 1000
         if is_delete:
-            entry = _latest_entry(WaterEntry, current_user.id)
-            if entry:
-                db.session.delete(entry)
-                return f"Removed your last water entry ({entry.amount_ml} ml).", 'delete_water', {'type': 'water', 'id': entry.id}
-            return "I couldn't find a water entry to remove.", 'delete_water', None
+            return _execute_agent_plan({
+                'reply': None,
+                'tool_calls': [{'tool': 'delete_latest_water', 'args': {}}],
+            }, selected)
         if is_update:
-            entry = _latest_entry(WaterEntry, current_user.id)
-            if entry and amount:
-                entry.amount_ml = int(amount)
-                return f"Updated your latest water entry to {int(amount)} ml.", 'update_water', {'type': 'water', 'id': entry.id}
+            if amount:
+                return _execute_agent_plan({
+                    'reply': f"Updated your latest water entry to {int(amount)} ml.",
+                    'tool_calls': [{'tool': 'update_water', 'args': {'amount_ml': int(amount)}}],
+                }, selected)
         if amount:
-            entry = WaterEntry(user_id=current_user.id, date=selected, amount_ml=int(amount))
-            db.session.add(entry)
-            return f"Logged {int(amount)} ml of water.", 'log_water', {'type': 'water'}
+            return _execute_agent_plan({
+                'reply': f"Logged {int(amount)} ml of water.",
+                'tool_calls': [{'tool': 'log_water', 'args': {'amount_ml': int(amount)}}],
+            }, selected)
 
     if any(w in lower for w in ('steps', 'walked')):
         steps = _number_before(['steps'], lower)
         if is_delete:
-            entry = _latest_entry(StepEntry, current_user.id)
-            if entry:
-                db.session.delete(entry)
-                return f"Removed your last steps entry ({entry.steps} steps).", 'delete_steps', {'type': 'steps', 'id': entry.id}
-            return "I couldn't find a steps entry to remove.", 'delete_steps', None
+            return _execute_agent_plan({
+                'reply': None,
+                'tool_calls': [{'tool': 'delete_latest_steps', 'args': {}}],
+            }, selected)
         if is_update:
-            entry = _latest_entry(StepEntry, current_user.id)
-            if entry and steps:
-                entry.steps = int(steps)
-                return f"Updated your latest steps entry to {int(steps)} steps.", 'update_steps', {'type': 'steps', 'id': entry.id}
+            if steps:
+                return _execute_agent_plan({
+                    'reply': f"Updated your latest steps entry to {int(steps)} steps.",
+                    'tool_calls': [{'tool': 'update_steps', 'args': {'steps': int(steps)}}],
+                }, selected)
         if steps:
-            db.session.add(StepEntry(user_id=current_user.id, date=selected, steps=int(steps)))
-            return f"Logged {int(steps)} steps.", 'log_steps', {'type': 'steps'}
-
-    calories = _number_before(['cal', 'cals', 'calorie', 'calories', 'kcal'], lower)
-    if any(w in lower for w in ('burned', 'burnt', 'exercise', 'workout')):
-        if is_delete:
-            entry = _latest_entry(CaloriesBurntEntry, current_user.id)
-            if entry:
-                db.session.delete(entry)
-                return f"Removed your last exercise entry ({entry.calories_burnt} calories).", 'delete_exercise', {'type': 'calories_burnt', 'id': entry.id}
-            return "I couldn't find an exercise entry to remove.", 'delete_exercise', None
-        if calories:
-            db.session.add(CaloriesBurntEntry(user_id=current_user.id, date=selected, calories_burnt=int(calories)))
-            return f"Logged {int(calories)} active calories.", 'log_exercise', {'type': 'calories_burnt'}
+            return _execute_agent_plan({
+                'reply': f"Logged {int(steps)} steps.",
+                'tool_calls': [{'tool': 'log_steps', 'args': {'steps': int(steps)}}],
+            }, selected)
 
     ai_reply = _ask_ai_general_reply(text, selected)
     if ai_reply:
@@ -811,6 +1323,7 @@ def dashboard():
     sleep_entries.reverse()
     return ok(
         totals=totals, goals=goals, metrics=metrics,
+        insights=_fallback_dashboard_insights(totals, goals, metrics),
         weight_kg=weight_kg,
         weight_lbs=round(weight_kg * 2.20462, 1) if weight_kg else None,
         chart=dict(
@@ -820,6 +1333,15 @@ def dashboard():
             sleep_values=[float(e.duration_hours) for e in sleep_entries],
         )
     )
+
+@api_bp.route('/dashboard/insights')
+@login_required
+def dashboard_insights():
+    selected = _parse_query_date()
+    totals = get_daily_totals(current_user.id, selected)
+    goals = get_user_goals(current_user)
+    metrics = get_health_metrics(current_user, totals)
+    return ok(insights=_ask_ai_dashboard_insights(selected, totals, goals, metrics))
 
 # Coach chat
 
@@ -858,7 +1380,7 @@ def coach_history():
 def coach_message():
     payload = request.get_json() or {}
     message = (payload.get('message') or '').strip()
-    selected = _parse_selected_date(payload)
+    selected = _resolve_message_date(message, _parse_selected_date(payload))
     future_error = _future_date_error(selected)
     if future_error:
         return future_error
@@ -1103,6 +1625,137 @@ def update_goals():
         if f in d: setattr(current_user, f, float(d[f]))
     db.session.commit()
     return ok(get_user_goals(current_user))
+
+# Friends
+
+@api_bp.route('/friends')
+@login_required
+def friends_index():
+    _ensure_friend_privacy(current_user.id)
+    friendships = Friendship.query.filter(
+        or_(Friendship.requester_id == current_user.id, Friendship.receiver_id == current_user.id),
+        Friendship.status.in_(('pending', 'accepted')),
+    ).order_by(Friendship.updated_at.desc(), Friendship.id.desc()).all()
+    return ok(
+        friends=[_serialize_friendship(f) for f in friendships if f.status == 'accepted'],
+        incoming=[_serialize_friendship(f) for f in friendships if f.status == 'pending' and f.receiver_id == current_user.id],
+        outgoing=[_serialize_friendship(f) for f in friendships if f.status == 'pending' and f.requester_id == current_user.id],
+        privacy=_serialize_friend_privacy(_ensure_friend_privacy(current_user.id)),
+    )
+
+@api_bp.route('/friends/search')
+@login_required
+def friends_search():
+    query = (request.args.get('q') or '').strip()
+    if len(query) < 2:
+        return ok(results=[])
+    users = (User.query.filter(
+        User.id != current_user.id,
+        or_(
+            User.username.ilike(f'%{query}%'),
+            User.profile_name.ilike(f'%{query}%'),
+            User.email.ilike(f'%{query}%'),
+        )
+    ).order_by(User.username.asc()).limit(12).all())
+    results = []
+    for user in users:
+        friendship = _friendship_between(current_user.id, user.id)
+        relation = None
+        if friendship and friendship.status != 'declined':
+            relation = dict(
+                id=friendship.id,
+                status=friendship.status,
+                direction='outgoing' if friendship.requester_id == current_user.id else 'incoming',
+            )
+        results.append(dict(user=_public_user(user), relation=relation))
+    return ok(results=results)
+
+@api_bp.route('/friends/request', methods=['POST'])
+@login_required
+def create_friend_request():
+    payload = request.get_json() or {}
+    receiver_id = int(payload.get('user_id') or 0)
+    if receiver_id == current_user.id:
+        return err('You cannot add yourself as a friend')
+    receiver = User.query.get(receiver_id)
+    if not receiver:
+        return err('User not found', 404)
+    existing = _friendship_between(current_user.id, receiver_id)
+    if existing:
+        if existing.status == 'declined':
+            existing.requester_id = current_user.id
+            existing.receiver_id = receiver_id
+            existing.status = 'pending'
+            db.session.commit()
+            return ok(friendship=_serialize_friendship(existing))
+        return ok(friendship=_serialize_friendship(existing))
+    friendship = Friendship(requester_id=current_user.id, receiver_id=receiver_id, status='pending')
+    db.session.add(friendship)
+    db.session.commit()
+    return ok(friendship=_serialize_friendship(friendship)), 201
+
+@api_bp.route('/friends/<int:friendship_id>/accept', methods=['POST'])
+@login_required
+def accept_friend_request(friendship_id):
+    friendship = Friendship.query.get_or_404(friendship_id)
+    if friendship.receiver_id != current_user.id:
+        return err('Only the receiver can accept this request', 403)
+    friendship.status = 'accepted'
+    db.session.commit()
+    return ok(friendship=_serialize_friendship(friendship))
+
+@api_bp.route('/friends/<int:friendship_id>/decline', methods=['POST'])
+@login_required
+def decline_friend_request(friendship_id):
+    friendship = Friendship.query.get_or_404(friendship_id)
+    if friendship.receiver_id != current_user.id:
+        return err('Only the receiver can decline this request', 403)
+    friendship.status = 'declined'
+    db.session.commit()
+    return ok(message='Declined')
+
+@api_bp.route('/friends/<int:friendship_id>', methods=['DELETE'])
+@login_required
+def remove_friendship(friendship_id):
+    friendship = Friendship.query.get_or_404(friendship_id)
+    if current_user.id not in (friendship.requester_id, friendship.receiver_id):
+        return err('Unauthorized', 403)
+    db.session.delete(friendship)
+    db.session.commit()
+    return ok(message='Removed')
+
+@api_bp.route('/friends/activity')
+@login_required
+def friends_activity():
+    selected = _parse_query_date()
+    friendships = _accepted_friendships(current_user.id)
+    friends = []
+    for friendship in friendships:
+        friend = friendship.receiver if friendship.requester_id == current_user.id else friendship.requester
+        summary = _friend_metric_summary(friend, selected)
+        summary['friendship_id'] = friendship.id
+        friends.append(summary)
+    return ok(date=selected.isoformat(), mine=_friend_metric_summary(current_user, selected), friends=friends)
+
+@api_bp.route('/privacy/friends', methods=['GET'])
+@login_required
+def get_friend_privacy():
+    return ok(_serialize_friend_privacy(_ensure_friend_privacy(current_user.id)))
+
+@api_bp.route('/privacy/friends', methods=['PUT'])
+@login_required
+def update_friend_privacy():
+    payload = request.get_json() or {}
+    privacy = _ensure_friend_privacy(current_user.id)
+    fields = {
+        'show_calories', 'show_macros', 'show_water', 'show_steps',
+        'show_sleep', 'show_active_calories', 'show_weight', 'show_food_names'
+    }
+    for field in fields:
+        if field in payload:
+            setattr(privacy, field, bool(payload[field]))
+    db.session.commit()
+    return ok(_serialize_friend_privacy(privacy))
 
 # Profile / Account
 

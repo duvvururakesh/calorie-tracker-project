@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { ChevronDown, ChevronUp, Droplets, Footprints, Weight as WeightIcon, Flame, Utensils, Moon, Pencil, Trash2, X } from 'lucide-react'
+import { ChevronDown, ChevronUp, Droplets, Footprints, Weight as WeightIcon, Utensils, Moon, Pencil, Trash2, X } from 'lucide-react'
 import api from '@/api/client'
 import Button from '@/components/Button'
 import BottomSheet from '@/components/logging/BottomSheet'
@@ -18,7 +18,6 @@ const SECTIONS = [
   { key: 'weight',         label: 'Weight',   icon: WeightIcon,  color: 'text-lime'   },
   { key: 'steps',          label: 'Steps',    icon: Footprints,  color: 'text-lime'   },
   { key: 'sleep',          label: 'Sleep',    icon: Moon,        color: 'text-accent' },
-  { key: 'calories_burnt', label: 'Burnt',    icon: Flame,       color: 'text-accent' },
 ] as const
 
 type EntryType = typeof SECTIONS[number]['key']
@@ -31,7 +30,6 @@ function formatEntry(type: string, e: Record<string, unknown>): string {
     case 'weight':         return `${(e.weight_kg as number).toFixed(1)} kg`
     case 'steps':          return `${e.steps} steps`
     case 'sleep':          return `${(e.duration_hours as number).toFixed(1)} hrs`
-    case 'calories_burnt': return `${e.calories_burnt} kcal`
     default:               return ''
   }
 }
@@ -169,7 +167,7 @@ function initialEditValues(type: EntryType, entry: Entry): Record<string, string
       wake_time: String(entry.wake_time || ''),
     }
   }
-  return { calories_burnt: String(entry.calories_burnt ?? '') }
+  return {}
 }
 
 function EditLogForm({
@@ -208,7 +206,7 @@ function EditLogForm({
 
       {type === 'food' && (
         <>
-          <Field label="Food Name">
+          <Field label="Food">
             <input value={values.name || ''} onChange={e => setField('name', e.target.value)} required />
           </Field>
           <Field label="Time">
@@ -254,19 +252,13 @@ function EditLogForm({
 
       {type === 'sleep' && (
         <div className="grid grid-cols-2 gap-3">
-          <Field label="Sleep Time">
+          <Field label="Sleep time">
             <input type="time" value={values.sleep_time || ''} onChange={e => setField('sleep_time', e.target.value)} required />
           </Field>
-          <Field label="Wake Time">
+          <Field label="Wake time">
             <input type="time" value={values.wake_time || ''} onChange={e => setField('wake_time', e.target.value)} required />
           </Field>
         </div>
-      )}
-
-      {type === 'calories_burnt' && (
-        <Field label="Calories Burnt">
-          <input type="number" min="0" value={values.calories_burnt || ''} onChange={e => setField('calories_burnt', e.target.value)} required />
-        </Field>
       )}
 
       <Button type="submit" loading={loading}>Save</Button>

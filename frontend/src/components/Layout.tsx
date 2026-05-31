@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
-import { BarChart3, Bot, ListPlus, LogOut, Settings, Target, User } from 'lucide-react'
+import { BarChart3, Bot, ListPlus, LogOut, Target, User, Users } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import api from '@/api/client'
 
@@ -14,8 +14,8 @@ export default function Layout() {
     { to: '/dashboard', label: 'Home', icon: BarChart3 },
     { to: '/log',       label: 'Log', icon: ListPlus },
     { to: '/coach',     label: 'Nibbly', icon: Bot },
+    { to: '/friends',   label: 'Friends', icon: Users },
     { to: '/goals',     label: 'Goals', icon: Target },
-    { to: '/settings',  label: 'Settings', icon: Settings },
   ]
 
   async function handleLogout() {

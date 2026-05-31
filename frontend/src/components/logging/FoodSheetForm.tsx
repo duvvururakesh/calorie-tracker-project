@@ -25,7 +25,7 @@ export default function FoodSheetForm({ date, onSuccess }: Props) {
   const [saved, setSaved] = useState('')
 
   const mut = useLogMutation('food', date, () => {
-    setSaved(`Logged: ${f.name || 'Food'} — ${f.calories} kcal`)
+    setSaved(`Added ${f.name || 'food'} — ${f.calories} kcal`)
     setF({ name: '', calories: '', protein: '', carbs: '', fat: '', sugar: '', time: '' })
     onSuccess()
     setTimeout(() => setSaved(''), 2500)
@@ -39,7 +39,7 @@ export default function FoodSheetForm({ date, onSuccess }: Props) {
   return (
     <form onSubmit={handleSubmit} className="space-y-3">
       {saved && <Alert message={saved} type="success" />}
-      <Field label="Food Name">
+      <Field label="Food">
         <input type="text" placeholder="e.g. Chicken Rice Bowl"
           value={f.name} onChange={e => setF(p => ({ ...p, name: e.target.value }))} required />
       </Field>
@@ -71,7 +71,7 @@ export default function FoodSheetForm({ date, onSuccess }: Props) {
             value={f.sugar} onChange={e => setF(p => ({ ...p, sugar: e.target.value }))} min="0" />
         </Field>
       </div>
-      <Button type="submit" loading={mut.isPending}>Log Food</Button>
+      <Button type="submit" loading={mut.isPending}>Add Food</Button>
     </form>
   )
 }

@@ -24,7 +24,7 @@ export default function LoginPage() {
       navigate('/dashboard')
     } catch (err: unknown) {
       const e = err as { response?: { data?: { error?: string } } }
-      setError(e.response?.data?.error || 'Login failed')
+      setError(e.response?.data?.error || 'Sign in failed')
     } finally {
       setLoading(false)
     }
@@ -33,7 +33,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-svh flex items-center justify-center px-4 py-8 safe-top safe-bottom bg-bg">
       <div className="w-full max-w-sm p-5 sm:p-8 rounded-2xl bg-surface">
-        <h1 className="text-2xl sm:text-3xl font-bold text-center mb-7 sm:mb-8">Login</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold text-center mb-7 sm:mb-8">Welcome back</h1>
         <Alert message={error} type="error" />
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -60,14 +60,14 @@ export default function LoginPage() {
               required
             />
           </div>
-          <Button type="submit" loading={loading} loadingText="Logging in…">
-            Login
+          <Button type="submit" loading={loading} loadingText="Signing in…">
+            Sign in
           </Button>
         </form>
         <p className="text-center mt-6 text-sm text-gray-400">
-          Don't have an account?{' '}
+          New to Fitit?{' '}
           <Link to="/signup" className="text-lime hover:brightness-110 transition-all">
-            Sign up
+            Create account
           </Link>
         </p>
       </div>

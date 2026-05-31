@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Bot, Send, Sparkles } from 'lucide-react'
 import api from '@/api/client'
+import useCurrentLocalDate from '@/hooks/useCurrentLocalDate'
 
 type Message = {
   id: number | string
@@ -11,7 +12,7 @@ type Message = {
   created_at?: string
 }
 
-type CoachHistory = {
+type NibblyHistory = {
   greeting: string
   messages: Message[]
   memories: Record<string, string>
@@ -19,16 +20,16 @@ type CoachHistory = {
   suggestions?: string[]
 }
 
-export default function CoachPage() {
+export default function NibblyPage() {
   const [message, setMessage] = useState('')
   const [extraMessages, setExtraMessages] = useState<Message[]>([])
   const qc = useQueryClient()
   const scrollRef = useRef<HTMLDivElement>(null)
   const suggestionsRef = useRef<HTMLDivElement>(null)
-  const today = new Date().toISOString().slice(0, 10)
+  const today = useCurrentLocalDate()
 
-  const { data, isLoading } = useQuery<CoachHistory>({
-    queryKey: ['coach-history', today],
+  const { data, isLoading } = useQuery<NibblyHistory>({
+    queryKey: ['nibbly-history', today],
     queryFn: () => api.get(`/coach/history?date=${today}`).then(r => r.data),
   })
 
@@ -59,9 +60,9 @@ export default function CoachPage() {
       const reply = data?.reply?.content
         ? data.reply
         : {
-            id: `coach-empty-${Date.now()}`,
+            id: `nibbly-empty-${Date.now()}`,
             role: 'assistant' as const,
-            content: 'I received your message, but the coach service did not return a usable reply. Please try again.',
+            content: 'I got your message, but Nibbly could not write a clear reply. Try once more.',
           }
       setExtraMessages(prev => [...prev, reply])
       qc.invalidateQueries({ queryKey: ['dashboard'] })
@@ -72,9 +73,9 @@ export default function CoachPage() {
       setExtraMessages(prev => [
         ...prev,
         {
-          id: `coach-error-${Date.now()}`,
+          id: `nibbly-error-${Date.now()}`,
           role: 'assistant',
-          content: `I could not reach the coach service. ${detail}`,
+          content: `I could not reach Nibbly. ${detail}`,
         },
       ])
     },
@@ -105,8 +106,8 @@ export default function CoachPage() {
               {isLoading
                 ? 'Loading food context...'
                 : data?.ai_provider
-                  ? `AI food parsing: ${data.ai_provider}`
-                  : 'AI food parsing needs a server key'}
+                  ? `Food understanding: ${data.ai_provider}`
+                  : 'Food understanding needs a server key'}
             </p>
           </div>
         </div>
@@ -138,7 +139,7 @@ export default function CoachPage() {
           ))}
 
           {send.isPending && (
-            <div className="text-xs text-gray-500 px-2">Thinking...</div>
+            <div className="text-xs text-gray-500 px-2">Reading...</div>
           )}
         </div>
 
@@ -163,13 +164,13 @@ export default function CoachPage() {
               value={message}
               onChange={e => setMessage(e.target.value)}
               rows={1}
-              placeholder="Ask or log something..."
+              placeholder="Ask or log food..."
               className="resize-none"
             />
             <button
               type="submit"
               disabled={!message.trim() || send.isPending}
-              aria-label="Send message"
+              aria-label="Send"
               className="w-12 h-12 rounded-full bg-lime text-black flex items-center justify-center flex-shrink-0 disabled:opacity-40"
             >
               <Send size={18} />

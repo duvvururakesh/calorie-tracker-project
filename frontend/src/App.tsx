@@ -8,11 +8,13 @@ import Spinner from '@/components/Spinner'
 
 const LoginPage = lazy(() => import('@/pages/LoginPage'))
 const SignupPage = lazy(() => import('@/pages/SignupPage'))
+const OnboardingPage = lazy(() => import('@/pages/OnboardingPage'))
 const DashboardPage = lazy(() => import('@/pages/DashboardPage'))
 const LogPage = lazy(() => import('@/pages/LogPage'))
 const GoalsPage = lazy(() => import('@/pages/GoalsPage'))
 const SettingsPage = lazy(() => import('@/pages/SettingsPage'))
-const CoachPage = lazy(() => import('@/pages/CoachPage'))
+const NibblyPage = lazy(() => import('@/pages/NibblyPage'))
+const FriendsPage = lazy(() => import('@/pages/FriendsPage'))
 
 const qc = new QueryClient({ defaultOptions: { queries: { retry: 1, staleTime: 30_000 } } })
 const Router = Capacitor.isNativePlatform() ? HashRouter : BrowserRouter
@@ -24,10 +26,10 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>
 }
 
-function PublicRoute({ children }: { children: React.ReactNode }) {
+function PublicRoute({ children, redirectTo = '/dashboard' }: { children: React.ReactNode; redirectTo?: string }) {
   const { user, loading } = useAuth()
   if (loading) return null
-  if (user) return <Navigate to="/dashboard" replace />
+  if (user) return <Navigate to={redirectTo} replace />
   return <>{children}</>
 }
 
@@ -39,12 +41,14 @@ export default function App() {
           <Suspense fallback={<Spinner />}>
             <Routes>
               <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
-              <Route path="/signup" element={<PublicRoute><SignupPage /></PublicRoute>} />
+              <Route path="/signup" element={<PublicRoute redirectTo="/onboarding"><SignupPage /></PublicRoute>} />
+              <Route path="/onboarding" element={<ProtectedRoute><OnboardingPage /></ProtectedRoute>} />
               <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
                 <Route index element={<Navigate to="/dashboard" replace />} />
                 <Route path="/dashboard" element={<DashboardPage />} />
                 <Route path="/log" element={<LogPage />} />
-                <Route path="/coach" element={<CoachPage />} />
+                <Route path="/coach" element={<NibblyPage />} />
+                <Route path="/friends" element={<FriendsPage />} />
                 <Route path="/goals" element={<GoalsPage />} />
                 <Route path="/settings" element={<SettingsPage />} />
               </Route>

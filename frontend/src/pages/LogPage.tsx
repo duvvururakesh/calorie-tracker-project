@@ -1,12 +1,13 @@
-import { cloneElement, isValidElement, useEffect, useId, useState } from 'react'
+import { cloneElement, isValidElement, useEffect, useId, useRef, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Pencil, Trash2, X } from 'lucide-react'
 import api from '@/api/client'
 import WeekSelector from '@/components/WeekSelector'
 import Card from '@/components/Card'
 import Button from '@/components/Button'
+import useCurrentLocalDate from '@/hooks/useCurrentLocalDate'
 
-type Tab = 'food' | 'water' | 'weight' | 'steps' | 'sleep' | 'calories_burnt'
+type Tab = 'food' | 'water' | 'weight' | 'steps' | 'sleep'
 type Entry = Record<string, unknown> & { id: number }
 type EditState = { tab: Tab; entry: Entry } | null
 
@@ -16,7 +17,6 @@ const TABS: { key: Tab; label: string }[] = [
   { key: 'weight',         label: 'Weight'         },
   { key: 'steps',          label: 'Steps'          },
   { key: 'sleep',          label: 'Sleep'          },
-  { key: 'calories_burnt', label: 'Calories Burnt' },
 ]
 
 /* ─── Shared field wrapper ────────────────────────────────────────────────── */
@@ -39,10 +39,19 @@ function SectionLabel({ title }: { title: string }) {
 
 /* ─── Page ────────────────────────────────────────────────────────────────── */
 export default function LogPage() {
-  const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10))
+  const today = useCurrentLocalDate()
+  const previousTodayRef = useRef(today)
+  const [date, setDate] = useState(today)
   const [tab, setTab]   = useState<Tab>('food')
   const [editing, setEditing] = useState<EditState>(null)
   const qc = useQueryClient()
+  const isFutureDate = date > today
+
+  useEffect(() => {
+    const previousToday = previousTodayRef.current
+    previousTodayRef.current = today
+    setDate(current => current === previousToday ? today : current)
+  }, [today])
 
   const { data: entries, isLoading } = useQuery({
     queryKey: ['entries', date],
@@ -69,13 +78,19 @@ export default function LogPage() {
   return (
     <div className="max-w-2xl mx-auto min-w-0">
       <div className="mb-2 sm:mb-4">
-        <p className="text-sm text-gray-400">Add an entry</p>
+        <p className="text-sm text-gray-400">Add or edit daily logs</p>
         <h1 className="text-2xl sm:text-3xl font-bold">Log</h1>
       </div>
       <WeekSelector selectedDate={date} onSelect={nextDate => {
         setDate(nextDate)
         setEditing(null)
       }} />
+
+      {isFutureDate && (
+        <div className="mb-4 rounded-xl border border-white/10 bg-elevated/50 px-4 py-3 text-sm text-gray-300">
+          Future dates are view-only. You can browse them, but logs can only be added for today or past dates.
+        </div>
+      )}
 
       <div className="flex flex-nowrap gap-2 mb-2 sm:mb-6 overflow-x-auto no-scrollbar">
         {TABS.map(t => (
@@ -100,29 +115,34 @@ export default function LogPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 min-w-0">
         {/* Form panel */}
         <Card>
-          {tab === 'food' && (
-            <FoodForm date={date} editing={editing?.tab === 'food' ? editing.entry : null}
-              onCancelEdit={() => setEditing(null)} onSuccess={editing ? finishEdit : invalidate} />
-          )}
-          {tab === 'water' && (
-            <WaterForm date={date} editing={editing?.tab === 'water' ? editing.entry : null}
-              onCancelEdit={() => setEditing(null)} onSuccess={editing ? finishEdit : invalidate} />
-          )}
-          {tab === 'weight' && (
-            <WeightForm date={date} editing={editing?.tab === 'weight' ? editing.entry : null}
-              onCancelEdit={() => setEditing(null)} onSuccess={editing ? finishEdit : invalidate} />
-          )}
-          {tab === 'steps' && (
-            <StepsForm date={date} editing={editing?.tab === 'steps' ? editing.entry : null}
-              onCancelEdit={() => setEditing(null)} onSuccess={editing ? finishEdit : invalidate} />
-          )}
-          {tab === 'sleep' && (
-            <SleepForm date={date} editing={editing?.tab === 'sleep' ? editing.entry : null}
-              onCancelEdit={() => setEditing(null)} onSuccess={editing ? finishEdit : invalidate} />
-          )}
-          {tab === 'calories_burnt' && (
-            <CaloriesBurntForm date={date} editing={editing?.tab === 'calories_burnt' ? editing.entry : null}
-              onCancelEdit={() => setEditing(null)} onSuccess={editing ? finishEdit : invalidate} />
+          {isFutureDate ? (
+            <div className="py-8 text-center">
+              <p className="text-sm font-semibold text-gray-300">View only</p>
+              <p className="mt-1 text-sm text-gray-500">Choose today or a past date to add logs.</p>
+            </div>
+          ) : (
+            <>
+              {tab === 'food' && (
+                <FoodForm date={date} editing={editing?.tab === 'food' ? editing.entry : null}
+                  onCancelEdit={() => setEditing(null)} onSuccess={editing ? finishEdit : invalidate} />
+              )}
+              {tab === 'water' && (
+                <WaterForm date={date} editing={editing?.tab === 'water' ? editing.entry : null}
+                  onCancelEdit={() => setEditing(null)} onSuccess={editing ? finishEdit : invalidate} />
+              )}
+              {tab === 'weight' && (
+                <WeightForm date={date} editing={editing?.tab === 'weight' ? editing.entry : null}
+                  onCancelEdit={() => setEditing(null)} onSuccess={editing ? finishEdit : invalidate} />
+              )}
+              {tab === 'steps' && (
+                <StepsForm date={date} editing={editing?.tab === 'steps' ? editing.entry : null}
+                  onCancelEdit={() => setEditing(null)} onSuccess={editing ? finishEdit : invalidate} />
+              )}
+              {tab === 'sleep' && (
+                <SleepForm date={date} editing={editing?.tab === 'sleep' ? editing.entry : null}
+                  onCancelEdit={() => setEditing(null)} onSuccess={editing ? finishEdit : invalidate} />
+              )}
+            </>
           )}
         </Card>
 
@@ -163,9 +183,9 @@ function EntryList({
 
   return (
     <div>
-      <h3 className="font-bold text-base mb-3 capitalize">{title} Entries</h3>
+      <h3 className="font-bold text-base mb-3 capitalize">{title} logs</h3>
       {list.length === 0 ? (
-        <p className="text-gray-500 text-sm text-center py-8">No {title} logged yet.</p>
+        <p className="text-gray-500 text-sm text-center py-8">No {title} logs yet.</p>
       ) : (
         <ul className="space-y-2">
           {list.map(e => (
@@ -181,7 +201,6 @@ function EntryList({
                 {tab === 'weight'         && `${(e.weight_kg as number).toFixed(1)} kg`}
                 {tab === 'steps'          && `${e.steps} steps`}
                 {tab === 'sleep'          && `${(e.duration_hours as number).toFixed(1)} hrs`}
-                {tab === 'calories_burnt' && `${e.calories_burnt} kcal burnt`}
               </span>
               <button
                 type="button"
@@ -223,7 +242,7 @@ function FormHeading({
 }) {
   return (
     <div className="flex items-center justify-between gap-3 mb-2 sm:mb-4">
-      <h3 className="font-bold text-base">{editing ? `Edit ${title}` : `Log ${title}`}</h3>
+      <h3 className="font-bold text-base">{editing ? `Edit ${title}` : `Add ${title}`}</h3>
       {editing && (
         <button
           type="button"
@@ -279,7 +298,7 @@ function FoodForm({ date, editing, onCancelEdit, onSuccess }: LogFormProps) {
   return (
     <form onSubmit={handleSubmit} className="space-y-2 sm:space-y-3">
       <FormHeading title="Food" editing={Boolean(editing)} onCancelEdit={onCancelEdit} />
-      <Field label="Food Name">
+      <Field label="Food">
         <input type="text" placeholder="e.g. Chicken Rice Bowl"
           value={f.name} onChange={e => setF(p => ({ ...p, name: e.target.value }))} required />
       </Field>
@@ -309,7 +328,7 @@ function FoodForm({ date, editing, onCancelEdit, onSuccess }: LogFormProps) {
             value={f.sugar} onChange={e => setF(p => ({ ...p, sugar: e.target.value }))} min="0" />
         </Field>
       </div>
-      <div className="flex justify-center"><Button type="submit" loading={loading}>{editing ? 'Save Food' : 'Log Food'}</Button></div>
+      <div className="flex justify-center"><Button type="submit" loading={loading}>{editing ? 'Save Food' : 'Add Food'}</Button></div>
     </form>
   )
 }
@@ -345,7 +364,7 @@ function WaterForm({ date, editing, onCancelEdit, onSuccess }: LogFormProps) {
         <input type="number" placeholder="250"
           value={amount} onChange={e => setAmount(e.target.value)} required min="0" />
       </Field>
-      <div className="flex justify-center"><Button type="submit" loading={loading}>{editing ? 'Save Water' : 'Log Water'}</Button></div>
+      <div className="flex justify-center"><Button type="submit" loading={loading}>{editing ? 'Save Water' : 'Add Water'}</Button></div>
     </form>
   )
 }
@@ -401,7 +420,7 @@ function WeightForm({ date, editing, onCancelEdit, onSuccess }: LogFormProps) {
         <input type="number" placeholder="0"
           value={weight} onChange={e => setWeight(e.target.value)} required min="0" step="0.1" />
       </Field>
-      <div className="flex justify-center"><Button type="submit" loading={loading}>{editing ? 'Save Weight' : 'Log Weight'}</Button></div>
+      <div className="flex justify-center"><Button type="submit" loading={loading}>{editing ? 'Save Weight' : 'Add Weight'}</Button></div>
     </form>
   )
 }
@@ -437,7 +456,7 @@ function StepsForm({ date, editing, onCancelEdit, onSuccess }: LogFormProps) {
         <input type="number" placeholder="0"
           value={steps} onChange={e => setSteps(e.target.value)} required min="0" />
       </Field>
-      <div className="flex justify-center"><Button type="submit" loading={loading}>{editing ? 'Save Steps' : 'Log Steps'}</Button></div>
+      <div className="flex justify-center"><Button type="submit" loading={loading}>{editing ? 'Save Steps' : 'Add Steps'}</Button></div>
     </form>
   )
 }
@@ -470,49 +489,13 @@ function SleepForm({ date, editing, onCancelEdit, onSuccess }: LogFormProps) {
   return (
     <form onSubmit={handleSubmit} className="space-y-2.5 sm:space-y-3">
       <FormHeading title="Sleep" editing={Boolean(editing)} onCancelEdit={onCancelEdit} />
-      <Field label="Sleep Time">
+      <Field label="Sleep time">
         <input type="time" value={sleepTime} onChange={e => setSleepTime(e.target.value)} />
       </Field>
-      <Field label="Wake Time">
+      <Field label="Wake time">
         <input type="time" value={wakeTime} onChange={e => setWakeTime(e.target.value)} />
       </Field>
-      <div className="flex justify-center"><Button type="submit" loading={loading}>{editing ? 'Save Sleep' : 'Log Sleep'}</Button></div>
-    </form>
-  )
-}
-
-function CaloriesBurntForm({ date, editing, onCancelEdit, onSuccess }: LogFormProps) {
-  const [calories, setCalories] = useState('')
-  const [loading, setLoading]   = useState(false)
-
-  useEffect(() => {
-    setCalories(editing ? String(editing.calories_burnt ?? '') : '')
-  }, [editing])
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    setLoading(true)
-    try {
-      if (editing) {
-        await api.put(`/entries/calories_burnt/${editing.id}`, { calories_burnt: calories, date })
-      } else {
-        await api.post('/entries/calories_burnt', { calories_burnt: calories, date })
-      }
-      setCalories('')
-      onSuccess()
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-2.5 sm:space-y-3">
-      <FormHeading title="Calories Burnt" editing={Boolean(editing)} onCancelEdit={onCancelEdit} />
-      <Field label="Calories Burnt">
-        <input type="number" placeholder="0"
-          value={calories} onChange={e => setCalories(e.target.value)} required min="0" />
-      </Field>
-      <div className="flex justify-center"><Button type="submit" loading={loading}>{editing ? 'Save Calories' : 'Log Calories Burnt'}</Button></div>
+      <div className="flex justify-center"><Button type="submit" loading={loading}>{editing ? 'Save Sleep' : 'Add Sleep'}</Button></div>
     </form>
   )
 }

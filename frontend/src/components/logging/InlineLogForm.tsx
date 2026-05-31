@@ -15,7 +15,6 @@ export default function InlineLogForm({ metric, date, onSuccess, onClose }: Prop
       {metric === 'water'  && <WaterInline  date={date} onSuccess={onSuccess} />}
       {metric === 'steps'  && <SimpleInline date={date} onSuccess={onSuccess} type="steps"          field="steps"          placeholder="Steps" />}
       {metric === 'weight' && <WeightInline date={date} onSuccess={onSuccess} />}
-      {metric === 'burnt'  && <SimpleInline date={date} onSuccess={onSuccess} type="calories_burnt" field="calories_burnt" placeholder="kcal" />}
       {metric === 'sleep'  && <SleepInline  date={date} onSuccess={onSuccess} />}
       <button
         type="button"

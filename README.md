@@ -1,130 +1,130 @@
-# Fitit — Calorie & Fitness Tracker
+# Fitit
 
-A full-stack fitness tracking web app. Log food, water, weight, steps, sleep, and calories burnt. Visualize your progress with charts and set custom goals.
+Mobile-first food, macro, hydration, weight, sleep, and steps tracker with a React frontend, Flask API backend, PWA support, Capacitor iOS project, and the Nibbly nutrition agent.
 
----
+## What Runs
 
-## Tech Stack
+- `app.py` starts Flask.
+- Flask serves `/api/*` JSON endpoints and the production React build from `frontend/dist`.
+- React owns all user-facing routes: `/dashboard`, `/log`, `/coach`, `/friends`, `/goals`, `/settings`.
+- Capacitor wraps the built React app for iOS from `frontend/ios`.
+
+## Stack
 
 | Layer | Technology |
-|-------|------------|
-| Frontend | React 19 + TypeScript + Vite |
+| --- | --- |
+| Frontend | React 19, TypeScript, Vite |
+| Routing | React Router |
+| Server state | TanStack Query |
 | Styling | Tailwind CSS v4 |
-| State / Data Fetching | TanStack Query (React Query v5) |
-| Charts | Recharts |
-| Routing | React Router v7 |
-| HTTP Client | Axios |
-| Backend | Python + Flask |
-| ORM | SQLAlchemy + Flask-Migrate |
-| Auth | Flask-Login (session-based) |
-| Database | SQLite |
-
----
-
-## Features
-
-- **Dashboard** — Daily overview with calorie ring charts, macro breakdown, activity progress, weight trend line chart, and sleep bar chart
-- **Log** — 6-tab log for Food, Water, Weight, Steps, Sleep, and Calories Burnt with inline add/delete
-- **Goals** — Set targets for calories, macros (protein/carbs/fat), water, steps, sleep, and weight
-- **Settings** — Update profile details (height, weight, DOB, gender, activity level) and account credentials
-
----
+| Charts/icons | Recharts, lucide-react |
+| Backend | Flask, Flask-Login, SQLAlchemy |
+| Database | SQLite locally |
+| AI agent | Server-side Gemini/OpenAI-compatible planner with guarded tools |
+| PWA/iOS | Web manifest, service worker, Capacitor iOS |
 
 ## Project Structure
 
-```
+```text
 Fitit/
-├── app.py                        # Flask entry point
-├── config.py                     # App config (secret key, DB URI)
-├── requirements.txt              # Python dependencies
+├── app.py                         # Flask entry point
+├── config.py                      # Environment loading and Flask config
+├── requirements.txt               # Backend dependencies
 ├── calorie_tracker/
-│   ├── __init__.py               # App factory — registers API blueprint, serves React build
-│   ├── models.py                 # SQLAlchemy models (User, FoodEntry, WaterEntry, etc.)
-│   └── routes/
-│       ├── api_routes.py         # All REST API endpoints (/api/*)
-│       └── auth_routes.py        # Signup/login/logout
-└── frontend/
-    ├── package.json
-    ├── vite.config.ts            # Vite + Tailwind plugin + /api proxy to Flask
-    ├── tsconfig.app.json
-    └── src/
-        ├── App.tsx               # Router + protected/public route wrappers
-        ├── api/client.ts         # Axios instance (withCredentials, 401 interceptor)
-        ├── hooks/useAuth.tsx     # Auth context provider
-        ├── components/
-        │   ├── Layout.tsx        # Header nav
-        │   ├── RingChart.tsx     # Donut ring chart (Recharts)
-        │   └── WeekSelector.tsx  # Week navigation component
-        └── pages/
-            ├── LoginPage.tsx
-            ├── SignupPage.tsx
-            ├── DashboardPage.tsx
-            ├── LogPage.tsx
-            ├── GoalsPage.tsx
-            └── SettingsPage.tsx
+│   ├── __init__.py                # Flask app factory, API registration, React static host
+│   ├── models.py                  # SQLAlchemy data model
+│   ├── routes/
+│   │   └── api_routes.py          # JSON API, auth, logs, goals, profile, Nibbly agent
+│   └── utils.py                   # Totals, goals, health calculations
+├── frontend/
+│   ├── capacitor.config.ts        # iOS app config
+│   ├── public/                    # PWA manifest, service worker, icons, offline page
+│   ├── ios/                       # Generated Capacitor iOS project
+│   └── src/
+│       ├── api/                   # Axios API client
+│       ├── components/            # Shared UI and logging components
+│       ├── hooks/                 # Auth and mutation hooks
+│       ├── pages/                 # Route-level screens
+│       ├── App.tsx                # App routes and route guards
+│       ├── main.tsx               # React bootstrap
+│       └── pwa.ts                 # Service worker registration
+└── docs/
+    └── ARCHITECTURE.md            # Deeper system map and conventions
 ```
 
----
-
-## Getting Started
-
-### Prerequisites
-
-- Python 3.10+
-- Node.js 18+
-
-### 1. Clone the repo
-
-```bash
-git clone https://github.com/duvvururakesh/calorie-tracker-project.git
-cd calorie-tracker-project
-```
-
-### 2. Backend setup
+## Setup
 
 ```bash
 python -m venv venv
-source venv/bin/activate       # Windows: venv\Scripts\activate
+source venv/bin/activate
 pip install -r requirements.txt
-```
 
-### 3. Frontend setup
-
-```bash
 cd frontend
 npm install
+cd ..
 ```
 
----
+Create `.env` from `.env.example`:
 
-## Running the App
+```bash
+cp .env.example .env
+```
+
+Add `GEMINI_API_KEY` or `OPENAI_API_KEY` only on the backend. Do not put AI keys in frontend env files.
+
+## Run Locally
 
 ```bash
 ./run.sh
 ```
 
-Open `http://localhost:5001`. That's it — Flask serves the React app and all API routes from a single server. Frontend changes are watched and rebuilt automatically.
+Open `http://127.0.0.1:5001`.
 
----
+## Validate
 
-## API Overview
+```bash
+venv/bin/python -m compileall app.py config.py calorie_tracker
+cd frontend
+npm run lint
+npm run build
+npx cap sync ios
+```
 
-All endpoints are prefixed with `/api`.
+## iOS
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/auth/me` | Get current user |
+```bash
+cd frontend
+npm run ios:sync
+npm run ios:open
+```
+
+The iOS app loads the built web app through Capacitor. Browser routing uses `BrowserRouter`; native iOS uses `HashRouter`.
+
+## Data Rules
+
+- Logs are user-scoped.
+- Future-dated logs are blocked server-side.
+- Entry lists return newest items first.
+- Nibbly can only mutate data through explicit backend tools.
+- Agent actions are recorded in `AgentActionLog`.
+
+## API Summary
+
+All API routes are under `/api`.
+
+| Method | Endpoint | Purpose |
+| --- | --- | --- |
+| GET | `/api/auth/me` | Current user |
+| POST | `/api/auth/signup` | Create account |
 | POST | `/api/auth/login` | Login |
-| POST | `/api/auth/signup` | Register |
 | POST | `/api/auth/logout` | Logout |
-| GET | `/api/dashboard?date=YYYY-MM-DD` | Dashboard data for a date |
-| GET/POST | `/api/entries/food` | List / add food entries |
-| GET/POST | `/api/entries/water` | List / add water entries |
-| GET/POST | `/api/entries/weight` | List / add weight entries |
-| GET/POST | `/api/entries/steps` | List / add steps entries |
-| GET/POST | `/api/entries/sleep` | List / add sleep entries |
-| GET/POST | `/api/entries/calories_burnt` | List / add calories burnt entries |
-| DELETE | `/api/entries/<type>/<id>` | Delete an entry |
-| GET/PUT | `/api/goals` | Get / update goals |
-| GET/PUT | `/api/profile` | Get / update profile |
-| PUT | `/api/account` | Update username / email / password |
+| GET | `/api/dashboard?date=YYYY-MM-DD` | Daily totals, goals, charts |
+| GET | `/api/entries?date=YYYY-MM-DD` | All logs for a date |
+| POST | `/api/entries/<type>` | Create log entry |
+| PUT | `/api/entries/<type>/<id>` | Update log entry |
+| DELETE | `/api/entries/<type>/<id>` | Delete log entry |
+| GET/PUT | `/api/goals` | Read/update goals |
+| GET/PUT | `/api/profile` | Read/update profile |
+| PUT | `/api/account` | Update credentials |
+| GET | `/api/coach/history` | Nibbly chat history/context |
+| POST | `/api/coach/message` | Nibbly agent message |

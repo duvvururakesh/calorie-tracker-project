@@ -4,7 +4,6 @@ import api from '@/api/client'
 
 type Goals = {
   calorie_goal: string
-  calories_burnt_goal: string
   protein_goal: string
   carbs_goal: string
   fat_goal: string
@@ -28,7 +27,6 @@ type GoalConfig = {
 
 const EMPTY: Goals = {
   calorie_goal: '',
-  calories_burnt_goal: '',
   protein_goal: '',
   carbs_goal: '',
   fat_goal: '',
@@ -46,14 +44,6 @@ const GOALS: GoalConfig[] = [
     min: 100,
     step: 10,
     color: 'var(--color-move)',
-  },
-  {
-    key: 'calories_burnt_goal',
-    title: 'Exercise',
-    unit: 'CALORIES/DAY',
-    min: 50,
-    step: 10,
-    color: 'var(--color-exercise)',
   },
   {
     key: 'water_goal',
@@ -192,8 +182,12 @@ export default function GoalsPage() {
   const [goals, setGoals] = useState<Goals>(EMPTY)
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (data) setGoals(Object.fromEntries(Object.entries(data).map(([key, value]) => [key, String(value)])) as Goals)
+    if (data) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setGoals(Object.fromEntries(
+        Object.keys(EMPTY).map(key => [key, String(data[key] ?? '')])
+      ) as Goals)
+    }
   }, [data])
 
   const mut = useMutation({

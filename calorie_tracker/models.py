@@ -101,3 +101,42 @@ class UserMemory(db.Model):
     updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
     user = db.relationship('User', backref=db.backref('memories', lazy=True, cascade='all, delete-orphan'))
     __table_args__ = (db.UniqueConstraint('user_id', 'key', name='uq_user_memory_key'),)
+
+class AgentActionLog(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    agent = db.Column(db.String(80), nullable=False, default='nibbly')
+    tool = db.Column(db.String(80), nullable=False)
+    status = db.Column(db.String(20), nullable=False)
+    request = db.Column(db.Text, nullable=False)
+    result = db.Column(db.Text, nullable=True)
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    user = db.relationship('User', backref=db.backref('agent_actions', lazy=True, cascade='all, delete-orphan'))
+
+class Friendship(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    requester_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    receiver_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    status = db.Column(db.String(20), nullable=False, default='pending')
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+    requester = db.relationship('User', foreign_keys=[requester_id], backref=db.backref('sent_friendships', lazy=True, cascade='all, delete-orphan'))
+    receiver = db.relationship('User', foreign_keys=[receiver_id], backref=db.backref('received_friendships', lazy=True, cascade='all, delete-orphan'))
+    __table_args__ = (
+        db.UniqueConstraint('requester_id', 'receiver_id', name='uq_friendship_pair'),
+        db.CheckConstraint('requester_id != receiver_id', name='ck_friendship_not_self'),
+    )
+
+class FriendPrivacy(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False, unique=True)
+    show_calories = db.Column(db.Boolean, nullable=False, default=True)
+    show_macros = db.Column(db.Boolean, nullable=False, default=True)
+    show_water = db.Column(db.Boolean, nullable=False, default=True)
+    show_steps = db.Column(db.Boolean, nullable=False, default=True)
+    show_sleep = db.Column(db.Boolean, nullable=False, default=True)
+    show_active_calories = db.Column(db.Boolean, nullable=False, default=True)
+    show_weight = db.Column(db.Boolean, nullable=False, default=False)
+    show_food_names = db.Column(db.Boolean, nullable=False, default=False)
+    updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+    user = db.relationship('User', backref=db.backref('friend_privacy', uselist=False, cascade='all, delete-orphan'))
